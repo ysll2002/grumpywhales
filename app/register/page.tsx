@@ -40,18 +40,6 @@ export default function Register() {
       <div className="w-full max-w-sm p-8 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
         <h1 className="text-2xl font-semibold mb-6">Create your account</h1>
 
-        <button
-          onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
-          className="w-full py-2.5 rounded-xl font-medium text-sm mb-4"
-          style={{ backgroundColor: '#FFF', color: '#0E1116' }}
-        >
-          Continue with Google
-        </button>
-
-        <div className="flex items-center gap-3 my-4 text-xs text-[color:var(--color-muted)]">
-          <div className="flex-1 h-px" style={{ backgroundColor: 'var(--color-border)' }} /> or <div className="flex-1 h-px" style={{ backgroundColor: 'var(--color-border)' }} />
-        </div>
-
         <form onSubmit={onSubmit} className="space-y-3">
           <input required placeholder="Your name" value={name} onChange={e => setName(e.target.value)}
             className="w-full px-3 py-2.5 rounded-xl text-sm" style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-fg)' }} />
