@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { formatMoney, formatDate, type LineItem } from '@/lib/money';
+import SendInvoiceButton from '@/components/SendInvoiceButton';
 
 type Client = {
   id:               string;
@@ -57,10 +58,15 @@ export default async function InvoiceDetail({ params }: { params: Promise<{ id: 
             {client?.company_name ?? client?.name ?? 'Invoice'}
           </h1>
         </div>
-        <span className="px-3 py-1 rounded-full text-xs font-medium uppercase" style={{
-          backgroundColor: inv.status === 'paid' ? '#1E4736' : inv.status === 'overdue' ? '#4C1D1D' : '#2A2F37',
-          color:           inv.status === 'paid' ? '#34D399' : inv.status === 'overdue' ? '#F87171' : '#9CA3AF',
-        }}>{inv.status}</span>
+        <div className="flex flex-col items-end gap-3">
+          <span className="px-3 py-1 rounded-full text-xs font-medium uppercase" style={{
+            backgroundColor: inv.status === 'paid' ? '#1E4736' : inv.status === 'overdue' ? '#4C1D1D' : inv.status === 'sent' ? '#1E3A5F' : '#2A2F37',
+            color:           inv.status === 'paid' ? '#34D399' : inv.status === 'overdue' ? '#F87171' : inv.status === 'sent' ? '#5BA3F5' : '#9CA3AF',
+          }}>{inv.status}</span>
+          {inv.status === 'draft' && client?.email && (
+            <SendInvoiceButton invoiceId={inv.id} clientEmail={client.email} />
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-8 text-sm">
@@ -110,7 +116,7 @@ export default async function InvoiceDetail({ params }: { params: Promise<{ id: 
       )}
 
       <div className="mt-8 text-xs" style={{ color: 'var(--color-muted)' }}>
-        Sending and payment tracking arrive in the next iteration.
+        Automatic payment tracking arrives once you connect a UK bank in Banking.
       </div>
     </div>
   );
