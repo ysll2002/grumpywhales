@@ -45,7 +45,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .from('profiles')
           .select('id')
           .eq('email', user.email)
-          .single();
+          .maybeSingle();
         if (!existing) {
           await supabase.from('profiles').insert({
             email:      user.email,
@@ -57,12 +57,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return true;
     },
     async jwt({ token, user }) {
-      if (user?.email) {
-        const { data: profile } = await supabase
+      // Resolve profileId on first sign-in OR whenever it's missing from the
+      // token (covers cases where the database was reset between sessions).
+      const email = (user?.email ?? token.email) as string | undefined;
+      if (email && !token.profileId) {
+        let { data: profile } = await supabase
           .from('profiles')
           .select('id')
-          .eq('email', user.email)
-          .single();
+          .eq('email', email)
+          .maybeSingle();
+        // If the profile is missing entirely — typically a fresh DB after the
+        // session was created — create it on the fly so the user doesn't have
+        // to sign out / back in.
+        if (!profile) {
+          const { data: inserted } = await supabase
+            .from('profiles')
+            .insert({ email, name: (user?.name ?? token.name ?? '') as string })
+            .select('id')
+            .single();
+          profile = inserted;
+        }
         if (profile) token.profileId = profile.id;
       }
       return token;
