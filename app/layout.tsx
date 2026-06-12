@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, Playfair_Display } from 'next/font/google';
 import { SessionProvider } from 'next-auth/react';
+import { GoogleAnalytics } from '@next/third-parties/google';
 import './globals.css';
 
 const body    = Inter({ subsets: ['latin'], variable: '--font-body' });
@@ -90,10 +91,12 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
   return (
     <html lang="en-GB" className={`${body.variable} ${display.variable}`}>
       <body>
         <SessionProvider>{children}</SessionProvider>
+        {gaId && <GoogleAnalytics gaId={gaId} />}
       </body>
     </html>
   );
