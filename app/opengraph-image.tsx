@@ -18,7 +18,7 @@ export default function Image() {
         }}
       >
         <div style={{
-          display: 'inline-block',
+          display: 'flex',
           padding: '6px 14px',
           borderRadius: 999,
           background: '#1E4736',
