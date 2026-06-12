@@ -18,6 +18,9 @@ export default function Home() {
       </nav>
 
       <section className="max-w-4xl mx-auto px-6 pt-24 pb-12 text-center">
+        <div className="inline-block px-3 py-1 rounded-full text-xs font-medium mb-6" style={{ backgroundColor: '#1E4736', color: '#34D399', letterSpacing: '0.04em' }}>
+          FREE FOREVER · NO CARD REQUIRED
+        </div>
         <h1 className="text-5xl sm:text-6xl font-bold leading-tight mb-6" style={{ fontFamily: 'var(--font-display)' }}>
           Get paid faster.<br />
           <span style={{ color: 'var(--color-accent)' }}>Without nagging.</span>
@@ -27,10 +30,10 @@ export default function Home() {
           payments for you — politely, then less politely. Say thank you when the money arrives.
         </p>
         <Link href="/register" className="inline-block px-8 py-3 rounded-full font-medium text-base" style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
-          Start free →
+          Get started — it&apos;s free →
         </Link>
         <p className="text-xs text-[color:var(--color-muted)] mt-4">
-          UK bank accounts via Plaid · No card required to try
+          Always free · No card · No upgrade prompts · UK bank accounts via Plaid
         </p>
       </section>
 
@@ -45,6 +48,23 @@ export default function Home() {
             <p className="text-sm text-[color:var(--color-muted)]">{f.body}</p>
           </div>
         ))}
+      </section>
+
+      <section className="max-w-3xl mx-auto px-6 pb-20 text-center">
+        <div className="p-8 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
+          <h2 className="text-2xl font-semibold mb-3" style={{ fontFamily: 'var(--font-display)' }}>
+            Pricing? There isn&apos;t one.
+          </h2>
+          <p className="text-sm text-[color:var(--color-muted)] mb-2">
+            GrumpyWhales is <strong style={{ color: 'var(--color-fg)' }}>free forever</strong> — no trial countdown, no
+            invoice limits, no &ldquo;upgrade to unlock&rdquo; popups. Every feature works the same whether you send
+            one invoice a year or a hundred a month.
+          </p>
+          <p className="text-xs text-[color:var(--color-muted)] mt-4" style={{ opacity: 0.7 }}>
+            We may later add a Pro tier with optional extras, but the core (invoicing + payment matching +
+            chase emails) will stay free.
+          </p>
+        </div>
       </section>
 
       <footer className="max-w-5xl mx-auto px-6 py-10 border-t text-sm flex justify-between" style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}>
