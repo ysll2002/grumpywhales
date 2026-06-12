@@ -1,6 +1,7 @@
 'use client';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
 
 export default function Login() {
@@ -21,7 +22,8 @@ export default function Login() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6">
-      <Link href="/" className="text-2xl font-bold mb-10" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)' }}>
+      <Link href="/" className="flex items-center gap-3 text-2xl font-bold mb-10" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)', textDecoration: 'none' }}>
+        <Image src="/logo.png" alt="GrumpyWhales" width={48} height={48} priority style={{ borderRadius: 8 }} />
         GrumpyWhales
       </Link>
 

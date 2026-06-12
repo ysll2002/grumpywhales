@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import LogoutButton from '@/components/LogoutButton';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -10,7 +11,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="flex min-h-screen">
       <aside className="w-60 flex-shrink-0 sticky top-0 h-screen flex flex-col py-5" style={{ backgroundColor: '#0A0D12', borderRight: '1px solid var(--color-border)' }}>
-        <Link href="/dashboard" className="text-xl font-bold px-5 mb-8" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)' }}>
+        <Link href="/dashboard" className="flex items-center gap-2 text-lg font-bold px-5 mb-8" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)', textDecoration: 'none' }}>
+          <Image src="/logo.png" alt="GrumpyWhales" width={32} height={32} priority style={{ borderRadius: 5 }} />
           GrumpyWhales
         </Link>
         <nav className="flex flex-col gap-1 px-2 text-sm">

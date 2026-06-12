@@ -1,10 +1,12 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Home() {
   return (
     <main className="min-h-screen">
       <nav className="max-w-6xl mx-auto px-6 py-5 flex justify-between items-center">
-        <Link href="/" className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)' }}>
+        <Link href="/" className="flex items-center gap-2 text-xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)', textDecoration: 'none' }}>
+          <Image src="/logo.png" alt="GrumpyWhales" width={36} height={36} priority style={{ borderRadius: 6 }} />
           GrumpyWhales
         </Link>
         <div className="flex items-center gap-4 text-sm">
