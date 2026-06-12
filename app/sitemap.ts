@@ -1,5 +1,8 @@
 import type { MetadataRoute } from 'next';
 
+// Cached at the edge; refresh once a day so changes propagate without a manual redeploy.
+export const revalidate = 86400;
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = 'https://grumpywhales.com';
   const now  = new Date();
