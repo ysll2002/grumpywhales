@@ -17,7 +17,13 @@ export default function PlaidLinkButton() {
       try {
         const res = await fetch('/api/plaid/link-token', { method: 'POST' });
         const body = await res.json();
-        if (!res.ok) throw new Error(body.error ?? 'Failed to create link token');
+        if (!res.ok) {
+          const plaid = body.plaid as { error_code?: string; error_message?: string; display_message?: string } | null;
+          if (plaid?.error_code) {
+            throw new Error(`${plaid.error_code}: ${plaid.error_message ?? plaid.display_message ?? body.error}`);
+          }
+          throw new Error(body.error ?? 'Failed to create link token');
+        }
         setLinkToken(body.link_token);
         window.localStorage.setItem(STORAGE_KEY, body.link_token);
       } catch (e) {

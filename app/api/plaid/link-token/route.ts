@@ -22,7 +22,25 @@ export async function POST() {
     });
     return NextResponse.json({ link_token: data.link_token });
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Plaid link_token error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    // Plaid SDK wraps errors as axios errors — surface the JSON body so the
+    // UI can show why (redirect_uri not allowlisted, product not approved,
+    // etc.) instead of a generic "400".
+    const err = e as { response?: { data?: unknown }; message?: string };
+    const plaidBody = err.response?.data ?? null;
+    console.error('Plaid linkTokenCreate failed', {
+      message:      err.message,
+      plaid:        plaidBody,
+      env:          process.env.PLAID_ENV,
+      redirectUri,
+      webhook,
+    });
+    return NextResponse.json(
+      {
+        error: err.message ?? 'Plaid link_token error',
+        plaid: plaidBody,
+        debug: { env: process.env.PLAID_ENV ?? 'sandbox', redirectUri },
+      },
+      { status: 500 },
+    );
   }
 }
