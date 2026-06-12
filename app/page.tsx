@@ -19,7 +19,7 @@ export default function Home() {
 
       <section className="max-w-4xl mx-auto px-6 pt-24 pb-12 text-center">
         <div className="inline-block px-3 py-1 rounded-full text-xs font-medium mb-6" style={{ backgroundColor: '#1E4736', color: '#34D399', letterSpacing: '0.04em' }}>
-          FREE FOREVER · NO CARD REQUIRED
+          FREE · NO CARD REQUIRED
         </div>
         <h1 className="text-5xl sm:text-6xl font-bold leading-tight mb-6" style={{ fontFamily: 'var(--font-display)' }}>
           Get paid faster.<br />
