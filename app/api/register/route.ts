@@ -3,9 +3,12 @@ import bcrypt from 'bcryptjs';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 
 export async function POST(req: NextRequest) {
-  const { name, email, password } = await req.json();
+  const { name, email, password, accepted_terms } = await req.json();
   if (!email || !password) {
     return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
+  }
+  if (accepted_terms !== true) {
+    return NextResponse.json({ error: 'You must agree to the Terms and Privacy Policy' }, { status: 400 });
   }
 
   const { data: existing } = await supabase
@@ -18,7 +21,12 @@ export async function POST(req: NextRequest) {
   }
 
   const password_hash = await bcrypt.hash(password, 12);
-  const { error } = await supabase.from('profiles').insert({ name, email, password_hash });
+  const { error } = await supabase.from('profiles').insert({
+    name,
+    email,
+    password_hash,
+    accepted_terms_at: new Date().toISOString(),
+  });
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

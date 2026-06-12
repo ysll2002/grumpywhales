@@ -48,9 +48,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .maybeSingle();
         if (!existing) {
           await supabase.from('profiles').insert({
-            email:      user.email,
-            name:       user.name ?? '',
-            avatar_url: user.image ?? null,
+            email:             user.email,
+            name:              user.name ?? '',
+            avatar_url:        user.image ?? null,
+            accepted_terms_at: new Date().toISOString(),
           });
         }
       }
@@ -72,7 +73,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!profile) {
           const { data: inserted } = await supabase
             .from('profiles')
-            .insert({ email, name: (user?.name ?? token.name ?? '') as string })
+            .insert({
+              email,
+              name:              (user?.name ?? token.name ?? '') as string,
+              accepted_terms_at: new Date().toISOString(),
+            })
             .select('id')
             .single();
           profile = inserted;

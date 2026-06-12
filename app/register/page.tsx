@@ -8,17 +8,22 @@ export default function Register() {
   const [name,     setName]     = useState('');
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
+  const [agreed,   setAgreed]   = useState(false);
   const [error,    setError]    = useState('');
   const [busy,     setBusy]     = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!agreed) {
+      setError('Please tick the box to agree to the Terms and Privacy Policy.');
+      return;
+    }
     setBusy(true);
     setError('');
     const reg = await fetch('/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, accepted_terms: true }),
     });
     if (!reg.ok) {
       const j = await reg.json().catch(() => ({}));
@@ -32,6 +37,14 @@ export default function Register() {
     else window.location.href = '/dashboard';
   }
 
+  function onGoogle() {
+    if (!agreed) {
+      setError('Please tick the box to agree to the Terms and Privacy Policy.');
+      return;
+    }
+    signIn('google', { callbackUrl: '/dashboard' });
+  }
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6">
       <Link href="/" className="flex items-center gap-3 text-2xl font-bold mb-10" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)', textDecoration: 'none' }}>
@@ -43,9 +56,10 @@ export default function Register() {
         <h1 className="text-2xl font-semibold mb-6">Create your account</h1>
 
         <button
-          onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
-          className="w-full py-2.5 rounded-xl font-medium text-sm mb-4"
+          onClick={onGoogle}
+          className="w-full py-2.5 rounded-xl font-medium text-sm mb-4 disabled:opacity-50"
           style={{ backgroundColor: '#FFF', color: '#0E1116' }}
+          disabled={busy}
         >
           Continue with Google
         </button>
@@ -61,8 +75,30 @@ export default function Register() {
             className="w-full px-3 py-2.5 rounded-xl text-sm" style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-fg)' }} />
           <input type="password" required minLength={8} placeholder="Password (min 8 chars)" value={password} onChange={e => setPassword(e.target.value)}
             className="w-full px-3 py-2.5 rounded-xl text-sm" style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-fg)' }} />
+
+          <label className="flex items-start gap-2 text-xs cursor-pointer select-none pt-1" style={{ color: 'var(--color-muted)' }}>
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={e => setAgreed(e.target.checked)}
+              className="mt-0.5 shrink-0"
+              style={{ accentColor: 'var(--color-accent)' }}
+            />
+            <span>
+              I agree to the{' '}
+              <Link href="/terms"   target="_blank" rel="noopener" style={{ color: 'var(--color-accent)' }}>Terms of Service</Link>{' '}and{' '}
+              <Link href="/privacy" target="_blank" rel="noopener" style={{ color: 'var(--color-accent)' }}>Privacy Policy</Link>.
+            </span>
+          </label>
+
           {error && <p className="text-xs" style={{ color: '#F87171' }}>{error}</p>}
-          <button disabled={busy} type="submit" className="w-full py-2.5 rounded-xl font-medium text-sm disabled:opacity-50" style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
+
+          <button
+            disabled={busy || !agreed}
+            type="submit"
+            className="w-full py-2.5 rounded-xl font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}
+          >
             {busy ? 'Creating…' : 'Create account'}
           </button>
         </form>
