@@ -6,13 +6,19 @@ export async function POST() {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const base       = process.env.APP_URL ?? 'https://grumpywhales.com';
+  const redirectUri = `${base}/dashboard/banking/oauth-redirect`;
+  const webhook     = `${base}/api/plaid/webhook`;
+
   try {
     const { data } = await plaid().linkTokenCreate({
-      user:         { client_user_id: session.user.profileId },
-      client_name:  'GrumpyWhales',
-      products:     PLAID_PRODUCTS,
+      user:          { client_user_id: session.user.profileId },
+      client_name:   'GrumpyWhales',
+      products:      PLAID_PRODUCTS,
       country_codes: PLAID_COUNTRIES,
-      language:     'en',
+      language:      'en',
+      redirect_uri:  redirectUri,
+      webhook,
     });
     return NextResponse.json({ link_token: data.link_token });
   } catch (e) {

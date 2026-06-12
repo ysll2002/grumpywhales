@@ -6,29 +6,17 @@ import { useRouter } from 'next/navigation';
 
 const STORAGE_KEY = 'plaid_link_token';
 
-export default function PlaidLinkButton() {
+export default function PlaidOAuthResume() {
   const router = useRouter();
   const [linkToken, setLinkToken] = useState<string | null>(null);
-  const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch('/api/plaid/link-token', { method: 'POST' });
-        const body = await res.json();
-        if (!res.ok) throw new Error(body.error ?? 'Failed to create link token');
-        setLinkToken(body.link_token);
-        window.localStorage.setItem(STORAGE_KEY, body.link_token);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to create link token');
-      }
-    })();
+    setLinkToken(typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null);
   }, []);
 
   const onSuccess = useCallback(
     async (public_token: string, metadata: { institution?: { name?: string } | null }) => {
-      setLoading(true);
       try {
         const res = await fetch('/api/plaid/exchange', {
           method: 'POST',
@@ -48,34 +36,31 @@ export default function PlaidLinkButton() {
         });
 
         window.localStorage.removeItem(STORAGE_KEY);
-        router.refresh();
+        router.replace('/dashboard/banking');
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Connection failed');
-      } finally {
-        setLoading(false);
       }
     },
     [router],
   );
 
   const { open, ready } = usePlaidLink({
-    token: linkToken,
+    token:               linkToken,
+    receivedRedirectUri: typeof window !== 'undefined' ? window.location.href : undefined,
     onSuccess,
   });
 
-  const disabled = !ready || !linkToken || loading;
+  useEffect(() => {
+    if (ready && linkToken) open();
+  }, [ready, linkToken, open]);
 
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={() => open()}
-        disabled={disabled}
-        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {loading ? 'Connecting…' : 'Connect a bank account'}
-      </button>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-    </div>
-  );
+  if (!linkToken) {
+    return (
+      <p className="text-sm text-red-600">
+        Session lost — please go back to Banking and try connecting again.
+      </p>
+    );
+  }
+  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  return null;
 }
