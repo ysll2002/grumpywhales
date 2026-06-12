@@ -1,9 +1,28 @@
 import Link from 'next/link';
 import Image from 'next/image';
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'GrumpyWhales',
+  applicationCategory: 'FinanceApplication',
+  operatingSystem: 'Web',
+  url: 'https://grumpywhales.com',
+  description: 'Free invoicing software for UK freelancers and small businesses. Send invoices, automatically detect bank payments via Open Banking, and chase overdue clients automatically.',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'GBP' },
+  aggregateRating: undefined,  // add once we have reviews
+  featureList: [
+    'Send professional invoices to clients',
+    'Automatic payment detection via UK Open Banking',
+    'Automated chase emails for overdue invoices',
+    'Automated thank-you emails on payment received',
+  ],
+};
+
 export default function Home() {
   return (
     <main className="min-h-screen">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <nav className="max-w-6xl mx-auto px-6 py-5 flex justify-between items-center">
         <Link href="/" className="flex items-center gap-2 text-xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)', textDecoration: 'none' }}>
           <Image src="/logo.png" alt="GrumpyWhales" width={36} height={36} priority style={{ borderRadius: 6 }} />
