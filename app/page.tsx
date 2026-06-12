@@ -56,7 +56,7 @@ export default function Home() {
             Pricing? There isn&apos;t one.
           </h2>
           <p className="text-sm text-[color:var(--color-muted)] mb-2">
-            GrumpyWhales is <strong style={{ color: 'var(--color-fg)' }}>free forever</strong> — no trial countdown, no
+            GrumpyWhales is <strong style={{ color: 'var(--color-fg)' }}>free</strong> — no trial countdown, no
             invoice limits, no &ldquo;upgrade to unlock&rdquo; popups. Every feature works the same whether you send
             one invoice a year or a hundred a month.
           </p>
