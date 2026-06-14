@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Playfair_Display } from 'next/font/google';
 import { SessionProvider } from 'next-auth/react';
 import { GoogleAnalytics } from '@next/third-parties/google';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
 const body    = Inter({ subsets: ['latin'], variable: '--font-body' });
@@ -96,6 +97,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en-GB" className={`${body.variable} ${display.variable}`}>
       <body>
         <SessionProvider>{children}</SessionProvider>
+        <Analytics />
         {gaId && <GoogleAnalytics gaId={gaId} />}
       </body>
     </html>
