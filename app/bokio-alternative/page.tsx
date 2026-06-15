@@ -3,16 +3,18 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 // ─── Bokio shutdown anchor ───────────────────────────────────────────────────
-// Used both in copy and to compute the days-left badge. If Bokio's
-// announcement changes, edit this single date and the whole page tracks it.
-const BOKIO_END_DATE_ISO = '2026-06-30';
+// Used for the days-left badge. If Bokio's announcement changes, edit this
+// date and then grep the file for the previous human-readable form
+// (e.g. '7 July 2026' / '7 Jul 2026' / 'Closing 7 July') and update those too.
+// Source: official Bokio email announcement.
+const BOKIO_END_DATE_ISO = '2026-07-07';
 
 export const revalidate = 86400; // re-render once a day so the countdown moves
 
 export const metadata: Metadata = {
-  title: 'Bokio alternative — migrate before 30 June 2026, free forever',
+  title: 'Bokio alternative — migrate before 7 July 2026, free forever',
   description:
-    'Bokio is winding down its UK operations on 30 June 2026. Move your invoicing to GrumpyWhales — free for UK freelancers and small businesses, with automatic Open Banking payment matching and chase emails. No card required.',
+    'Bokio is winding down its UK operations on 7 July 2026. Move your invoicing to GrumpyWhales — free for UK freelancers and small businesses, with automatic Open Banking payment matching and chase emails. No card required.',
   alternates: { canonical: 'https://grumpywhales.com/bokio-alternative' },
   keywords: [
     'bokio alternative',
@@ -30,7 +32,7 @@ export const metadata: Metadata = {
     'bokio CSV export',
   ],
   openGraph: {
-    title: 'Bokio alternative — migrate before 30 June 2026, free forever',
+    title: 'Bokio alternative — migrate before 7 July 2026, free forever',
     description:
       'Bokio is leaving the UK. GrumpyWhales is free, UK-focused, and adds Open Banking auto-match and chase emails that Bokio never had.',
     url: 'https://grumpywhales.com/bokio-alternative',
@@ -42,7 +44,7 @@ export const metadata: Metadata = {
 const FAQS = [
   {
     q: 'Is Bokio really shutting down in the UK?',
-    a: 'Bokio has announced it is winding down its UK operations on 30 June 2026, after dropping its free tier in 2023. Existing customers have been notified to export their data and find an alternative. Please refer to Bokio\'s own announcement for the official details — they have offered refunds for unused subscription time.',
+    a: 'Bokio has announced it is winding down its UK operations on 7 July 2026, after dropping its free tier in 2023. Existing customers have been notified to export their data and find an alternative. Please refer to Bokio\'s own announcement for the official details — they have offered refunds for unused subscription time.',
   },
   {
     q: 'Will GrumpyWhales import my Bokio data?',
@@ -130,7 +132,7 @@ export default function BokioAlternativePage() {
             role="alert"
           >
             <span>
-              <strong>Bokio is closing on 30 June 2026.</strong>{' '}
+              <strong>Bokio is closing on 7 July 2026.</strong>{' '}
               <span style={{ color: '#FECACA' }}>{left} days left to move your invoices.</span>
             </span>
           </div>
@@ -181,12 +183,12 @@ export default function BokioAlternativePage() {
             <thead>
               <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                 <th className="text-left px-5 py-3 font-medium" style={{ color: 'var(--color-muted)' }}>Feature</th>
-                <th className="text-center px-5 py-3 font-medium" style={{ color: 'var(--color-muted)' }}>Bokio (until 30 Jun 2026)</th>
+                <th className="text-center px-5 py-3 font-medium" style={{ color: 'var(--color-muted)' }}>Bokio (until 7 Jul 2026)</th>
                 <th className="text-center px-5 py-3 font-medium" style={{ color: 'var(--color-accent)' }}>GrumpyWhales</th>
               </tr>
             </thead>
             <tbody>
-              <Row label="Available in the UK"                        bokio="Closing 30 June"        us="Yes, UK-first" usAccent />
+              <Row label="Available in the UK"                        bokio="Closing 7 July"         us="Yes, UK-first" usAccent />
               <Row label="Price"                                       bokio="£24.95/mo"              us="Free, forever" usAccent />
               <Row label="Send professional invoices"                  bokio="Yes"                    us="Yes" />
               <Row label="UK VAT-ready invoices (VAT number, lines)"   bokio="Yes"                    us="Yes" />
@@ -196,7 +198,7 @@ export default function BokioAlternativePage() {
               <Row label="HMRC MTD VAT submission"                     bokio="Yes"                    us="Coming late 2026" bokioAccent />
               <Row label="Double-entry bookkeeping ledger"             bokio="Yes (full)"             us="No — by design" bokioAccent />
               <Row label="Card required to sign up"                    bokio="Yes"                    us="No" usAccent />
-              <Row label="Account closure deadline"                    bokio="30 June 2026"           us="None" usAccent last />
+              <Row label="Account closure deadline"                    bokio="7 July 2026"           us="None" usAccent last />
             </tbody>
           </table>
         </div>
