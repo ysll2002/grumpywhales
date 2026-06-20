@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { type Event, type EventStatus } from '@/lib/events';
+import { type Event, type EventStatus, type EventRecurrence } from '@/lib/events';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -38,6 +38,7 @@ export default function EditEventForm({ event }: { event: Event }) {
   const [feeAmount,   setFeeAmount]   = useState(String(event.fee_amount));
   const [feeCurrency, setFeeCurrency] = useState(event.fee_currency);
   const [status,      setStatus]      = useState<EventStatus>(event.status);
+  const [recurrence,  setRecurrence]  = useState<EventRecurrence>(event.recurrence);
   const [saving,      setSaving]      = useState(false);
   const [deleting,    setDeleting]    = useState(false);
   const [error,       setError]       = useState('');
@@ -57,6 +58,7 @@ export default function EditEventForm({ event }: { event: Event }) {
         location,
         fee_amount: Number(feeAmount),
         fee_currency: feeCurrency,
+        recurrence,
         status,
       }),
     });
@@ -121,6 +123,16 @@ export default function EditEventForm({ event }: { event: Event }) {
             <option value="USD">USD $</option>
           </select>
         </div>
+      </div>
+
+      <div>
+        <label style={labelStyle}>Repeats</label>
+        <select value={recurrence} onChange={e => setRecurrence(e.target.value as EventRecurrence)} style={inputStyle}>
+          <option value="none">One-off — happens once</option>
+          <option value="daily">Daily — every day</option>
+          <option value="weekly">Weekly — same day each week</option>
+          <option value="monthly">Monthly — same day each month</option>
+        </select>
       </div>
 
       <div>

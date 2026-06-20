@@ -13,6 +13,14 @@ export function generateEventReference(): string {
 }
 
 export type EventStatus = 'draft' | 'published' | 'closed' | 'cancelled';
+export type EventRecurrence = 'none' | 'daily' | 'weekly' | 'monthly';
+
+export const RECURRENCE_LABELS: Record<EventRecurrence, string> = {
+  none:    'One-off',
+  daily:   'Daily',
+  weekly:  'Weekly',
+  monthly: 'Monthly',
+};
 
 export type Event = {
   id:                 string;
@@ -25,6 +33,7 @@ export type Event = {
   fee_amount:         number;
   fee_currency:       string;
   status:             EventStatus;
+  recurrence:         EventRecurrence;
   payment_reference:  string | null;
   created_at:         string;
   updated_at:         string;

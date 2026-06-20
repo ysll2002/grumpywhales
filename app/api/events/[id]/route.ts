@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
-import { type EventStatus } from '@/lib/events';
+import { type EventStatus, type EventRecurrence } from '@/lib/events';
 
 const VALID_STATUS: EventStatus[] = ['draft', 'published', 'closed', 'cancelled'];
+const VALID_RECURRENCE: EventRecurrence[] = ['none', 'daily', 'weekly', 'monthly'];
 
 async function loadOwnedEvent(eventId: string, profileId: string) {
   const { data, error } = await supabase
@@ -77,6 +78,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: 'status_invalid' }, { status: 400 });
     }
     patch.status = body.status;
+  }
+  if (typeof body.recurrence === 'string') {
+    if (!VALID_RECURRENCE.includes(body.recurrence as EventRecurrence)) {
+      return NextResponse.json({ error: 'recurrence_invalid' }, { status: 400 });
+    }
+    patch.recurrence = body.recurrence;
   }
 
   const { data, error } = await supabase

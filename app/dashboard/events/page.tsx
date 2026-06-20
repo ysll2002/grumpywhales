@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import Link from 'next/link';
-import { formatEventDateTime, formatMoney, type Event } from '@/lib/events';
+import { formatEventDateTime, formatMoney, RECURRENCE_LABELS, type Event } from '@/lib/events';
 
 const statusBadge: Record<string, { bg: string; fg: string; label: string }> = {
   draft:     { bg: '#2A2F37', fg: '#8B949E', label: 'Draft' },
@@ -67,6 +67,11 @@ export default async function EventsListPage() {
                     <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold" style={{ backgroundColor: badge.bg, color: badge.fg }}>
                       {badge.label}
                     </span>
+                    {ev.recurrence && ev.recurrence !== 'none' && (
+                      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold" style={{ backgroundColor: '#2A2F37', color: '#8B949E' }}>
+                        ↻ {RECURRENCE_LABELS[ev.recurrence]}
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm mb-1" style={{ color: 'var(--color-muted)' }}>
                     {formatEventDateTime(ev.starts_at)}{ev.location ? ` · ${ev.location}` : ''}

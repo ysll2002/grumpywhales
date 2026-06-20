@@ -3,7 +3,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import EditEventForm from './EditEventForm';
-import { formatEventDateTime, formatMoney, type Event } from '@/lib/events';
+import { formatEventDateTime, formatMoney, RECURRENCE_LABELS, type Event } from '@/lib/events';
 
 export default async function EventAdminPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -46,6 +46,7 @@ export default async function EventAdminPage({ params }: { params: Promise<{ id:
           <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--color-muted)' }}>When</p>
           <p className="text-sm font-medium">{formatEventDateTime(ev.starts_at)}</p>
           {ev.ends_at && <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>until {formatEventDateTime(ev.ends_at)}</p>}
+          {ev.recurrence !== 'none' && <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>↻ Repeats {RECURRENCE_LABELS[ev.recurrence].toLowerCase()}</p>}
         </div>
         <div>
           <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--color-muted)' }}>Fee</p>

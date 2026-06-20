@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
-import { generateEventReference, type EventStatus } from '@/lib/events';
+import { generateEventReference, type EventStatus, type EventRecurrence } from '@/lib/events';
 
 const VALID_STATUS: EventStatus[] = ['draft', 'published', 'closed', 'cancelled'];
+const VALID_RECURRENCE: EventRecurrence[] = ['none', 'daily', 'weekly', 'monthly'];
 
 export async function GET() {
   const session = await auth();
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
 
-  const { title, description, starts_at, ends_at, location, fee_amount, fee_currency, status } = body;
+  const { title, description, starts_at, ends_at, location, fee_amount, fee_currency, status, recurrence } = body;
 
   if (typeof title !== 'string' || !title.trim()) {
     return NextResponse.json({ error: 'title_required' }, { status: 400 });
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'fee_invalid' }, { status: 400 });
   }
   const finalStatus: EventStatus = VALID_STATUS.includes(status) ? status : 'draft';
+  const finalRecurrence: EventRecurrence = VALID_RECURRENCE.includes(recurrence) ? recurrence : 'none';
 
   const { data, error } = await supabase
     .from('events')
@@ -62,6 +64,7 @@ export async function POST(req: NextRequest) {
       fee_amount:        amount,
       fee_currency:      (fee_currency || 'GBP').toString().toUpperCase().slice(0, 3),
       status:            finalStatus,
+      recurrence:        finalRecurrence,
       payment_reference: generateEventReference(),
     })
     .select('*')
