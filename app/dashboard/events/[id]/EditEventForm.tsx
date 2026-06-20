@@ -1,0 +1,169 @@
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { type Event, type EventStatus } from '@/lib/events';
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '0.75rem 1rem',
+  borderRadius: '0.75rem',
+  border: '1px solid var(--color-border)',
+  backgroundColor: '#0A0D12',
+  color: 'var(--color-fg)',
+  fontSize: '0.9rem',
+  outline: 'none',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '0.85rem',
+  fontWeight: 500,
+  marginBottom: '0.5rem',
+};
+
+function toLocalDatetimeInput(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+export default function EditEventForm({ event }: { event: Event }) {
+  const router = useRouter();
+  const [title,       setTitle]       = useState(event.title);
+  const [description, setDescription] = useState(event.description ?? '');
+  const [startsAt,    setStartsAt]    = useState(toLocalDatetimeInput(event.starts_at));
+  const [endsAt,      setEndsAt]      = useState(toLocalDatetimeInput(event.ends_at));
+  const [location,    setLocation]    = useState(event.location ?? '');
+  const [feeAmount,   setFeeAmount]   = useState(String(event.fee_amount));
+  const [feeCurrency, setFeeCurrency] = useState(event.fee_currency);
+  const [status,      setStatus]      = useState<EventStatus>(event.status);
+  const [saving,      setSaving]      = useState(false);
+  const [deleting,    setDeleting]    = useState(false);
+  const [error,       setError]       = useState('');
+  const [savedFlash,  setSavedFlash]  = useState(false);
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(''); setSaving(true);
+    const res = await fetch(`/api/events/${event.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        description,
+        starts_at: new Date(startsAt).toISOString(),
+        ends_at:   endsAt ? new Date(endsAt).toISOString() : null,
+        location,
+        fee_amount: Number(feeAmount),
+        fee_currency: feeCurrency,
+        status,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setSaving(false);
+    if (!res.ok) { setError(data.error || 'update_failed'); return; }
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 2000);
+    router.refresh();
+  };
+
+  const remove = async () => {
+    if (!confirm('Delete this event permanently? Anyone you sent the link to will no longer find it.')) return;
+    setDeleting(true);
+    const res = await fetch(`/api/events/${event.id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      setError('delete_failed');
+      setDeleting(false);
+      return;
+    }
+    router.push('/dashboard/events');
+  };
+
+  return (
+    <form onSubmit={save} className="space-y-5">
+      <div>
+        <label style={labelStyle}>Event title</label>
+        <input type="text" required value={title} onChange={e => setTitle(e.target.value)} style={inputStyle} />
+      </div>
+
+      <div>
+        <label style={labelStyle}>Description</label>
+        <textarea rows={4} value={description} onChange={e => setDescription(e.target.value)} style={{ ...inputStyle, resize: 'vertical', minHeight: 100 }} />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label style={labelStyle}>Starts</label>
+          <input type="datetime-local" required value={startsAt} onChange={e => setStartsAt(e.target.value)} style={inputStyle} />
+        </div>
+        <div>
+          <label style={labelStyle}>Ends <span style={{ color: 'var(--color-muted)', fontWeight: 400 }}>(optional)</span></label>
+          <input type="datetime-local" value={endsAt} onChange={e => setEndsAt(e.target.value)} style={inputStyle} />
+        </div>
+      </div>
+
+      <div>
+        <label style={labelStyle}>Location</label>
+        <input type="text" value={location} onChange={e => setLocation(e.target.value)} style={inputStyle} />
+      </div>
+
+      <div className="grid grid-cols-[2fr_1fr] gap-3">
+        <div>
+          <label style={labelStyle}>Fee per attendee</label>
+          <input type="number" min="0" step="0.01" value={feeAmount} onChange={e => setFeeAmount(e.target.value)} style={inputStyle} />
+        </div>
+        <div>
+          <label style={labelStyle}>Currency</label>
+          <select value={feeCurrency} onChange={e => setFeeCurrency(e.target.value)} style={inputStyle}>
+            <option value="GBP">GBP £</option>
+            <option value="EUR">EUR €</option>
+            <option value="USD">USD $</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label style={labelStyle}>Status</label>
+        <select value={status} onChange={e => setStatus(e.target.value as EventStatus)} style={inputStyle}>
+          <option value="draft">Draft — only you can see it</option>
+          <option value="published">Published — open to attendees</option>
+          <option value="closed">Closed — no new attendees</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+
+      {error && (
+        <p className="text-sm py-2 px-3 rounded-lg" style={{ backgroundColor: '#3F1F1F', color: '#F87171' }}>{error}</p>
+      )}
+      {savedFlash && (
+        <p className="text-sm py-2 px-3 rounded-lg" style={{ backgroundColor: '#1E3A2A', color: '#6EE7B7' }}>Saved.</p>
+      )}
+
+      <div className="flex items-center justify-between gap-3 pt-2">
+        <button
+          type="button"
+          onClick={remove}
+          disabled={deleting}
+          className="text-sm"
+          style={{ color: '#F87171', background: 'none', border: 'none', cursor: deleting ? 'not-allowed' : 'pointer' }}
+        >
+          {deleting ? 'Deleting…' : 'Delete event'}
+        </button>
+        <button
+          type="submit"
+          disabled={saving}
+          className="px-6 py-3 rounded-full text-sm font-medium"
+          style={{
+            backgroundColor: saving ? 'var(--color-border)' : 'var(--color-accent)',
+            color: '#0A0D12',
+            border: 'none',
+            cursor: saving ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {saving ? 'Saving…' : 'Save changes'}
+        </button>
+      </div>
+    </form>
+  );
+}
