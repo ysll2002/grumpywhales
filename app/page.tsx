@@ -1,34 +1,26 @@
 import Link from 'next/link';
 import Image from 'next/image';
 
-// ─── Structured data (JSON-LD) ───────────────────────────────────────────────
 const SOFTWARE_LD = {
   '@context':              'https://schema.org',
   '@type':                 'SoftwareApplication',
   name:                    'GrumpyWhales',
-  applicationCategory:     'FinanceApplication',
-  applicationSubCategory:  'Invoicing software',
+  applicationCategory:     'BusinessApplication',
+  applicationSubCategory:  'Event management & paid registration',
   operatingSystem:         'Web',
   url:                     'https://grumpywhales.com',
   description:
-    'Free invoicing software for UK freelancers, sole traders, contractors and small limited companies. Send professional invoices, automatically detect bank payments via Open Banking, and chase overdue clients automatically.',
+    'Create paid events and get paid on time. GrumpyWhales is a free tool for hosts, community organisers, workshops and meet-ups to set up an event, collect attendee fees, and chase late payers automatically.',
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'GBP' },
   featureList: [
-    'Create and send professional invoices',
-    'Automatic payment detection via UK Open Banking',
-    'Auto-match bank transactions to invoices',
-    'Automated polite, then firmer, chase emails for overdue invoices',
-    'Automatic thank-you emails on payment received',
-    'Free forever — no card required, no upgrade prompts',
-    'VAT-ready invoicing',
-    'Designed for sole traders, freelancers, consultants and small UK businesses',
+    'Create an event in under a minute (title, time, location, fee)',
+    'You become the event admin — full control over settings',
+    'Unique payment reference generated per event',
+    'Automatic payment matching via UK Open Banking',
+    'Chase emails for attendees who haven\'t paid',
+    'Free forever — no card required, no hidden upgrade',
   ],
   inLanguage: 'en-GB',
-  audience: {
-    '@type': 'BusinessAudience',
-    audienceType: 'UK freelancers, sole traders, contractors, consultants, limited company directors',
-    geographicArea: { '@type': 'Country', name: 'United Kingdom' },
-  },
 };
 
 const ORG_LD = {
@@ -38,42 +30,29 @@ const ORG_LD = {
   url:        'https://grumpywhales.com',
   logo:       'https://grumpywhales.com/logo.png',
   description:
-    'GrumpyWhales is a free invoicing platform for UK freelancers and small businesses. We use Open Banking to automatically match payments to invoices and send chase emails on your behalf.',
-  areaServed: { '@type': 'Country', name: 'United Kingdom' },
+    'GrumpyWhales is a free tool for hosting paid events. Create an event, set a fee, share with attendees, and get paid on time.',
 };
 
 const FAQS = [
   {
-    q: 'Is GrumpyWhales really free to use?',
-    a: 'Yes. Creating an account, sending invoices, connecting your bank for payment tracking, and the automated chase and thank-you emails are all free. No card required to sign up, no trial countdown, no monthly limit on invoices. We may eventually add an optional Pro tier with extras, but the core invoicing and payment-tracking features will stay free.',
+    q: 'What kind of events can I host on GrumpyWhales?',
+    a: 'Anything with a host, a date, a location, and an attendance fee — meet-ups, workshops, classes, dinners, courses, ticketed gatherings, community memberships. If you can describe it in a title and a fee, you can run it on GrumpyWhales.',
   },
   {
-    q: 'How does the automatic payment detection work?',
-    a: 'When your client pays you by bank transfer, GrumpyWhales reads your bank transactions through the Plaid Open Banking connection (FCA-regulated, read-only) and matches the incoming amount and reference against your open invoices. When a match is found, the invoice is marked as paid and we send a thank-you email to your client automatically.',
+    q: 'How does the payment side work?',
+    a: 'When you create an event, we generate a unique payment reference (e.g. GW-EVT-ABC123). You share this reference with attendees. They pay you by bank transfer using the reference, and GrumpyWhales reconciles the incoming payment with the event automatically.',
   },
   {
-    q: 'Which UK banks are supported?',
-    a: 'All major UK banks are supported via Plaid, including Lloyds, Barclays, HSBC, NatWest, Santander, RBS, Halifax, Nationwide, Monzo, Starling, Revolut and Chase UK. Read-only access — we cannot move money or change anything in your account.',
+    q: 'Is GrumpyWhales really free?',
+    a: 'Yes. Creating events, managing attendees, collecting fees and chase emails are all free. No card required to sign up, no monthly limit on events, no upgrade prompts. A paid tier with extras may come later but the core stays free.',
   },
   {
-    q: 'Is this suitable for sole traders, freelancers and limited companies?',
-    a: 'Yes. GrumpyWhales is built specifically for UK self-employed people: sole traders, freelancers, contractors, consultants and directors of small limited companies. You can set your VAT number, business address and trading name on the invoice; we generate a sequential invoice number (INV-2026-0001) and a unique payment reference for each invoice.',
+    q: 'Do I need a bank account in the UK?',
+    a: 'For automatic Open Banking matching, yes — a UK personal or business current account. You can still create events and track them manually without connecting a bank.',
   },
   {
-    q: 'How quickly are payments detected after a client pays?',
-    a: 'Most UK Open Banking accounts refresh within 15 minutes to a few hours of a transaction posting. Plaid typically delivers transaction updates within this window — Monzo and Starling are usually fastest, traditional banks slower. You can always mark an invoice as paid manually if you need an instant status change.',
-  },
-  {
-    q: 'When do the chase emails go out?',
-    a: 'By default, the first polite reminder goes out 7 days after an invoice becomes overdue. You can change this delay in Settings. We send up to three escalating reminders (polite → firmer → final notice). All chase emails reference your original invoice number, amount due and bank payment reference.',
-  },
-  {
-    q: 'Do you store my Government Gateway, HMRC, or bank login details?',
-    a: 'No. Sign-in to your bank happens through Plaid’s own secure flow — we never see your bank password. We only store an opaque access token that lets us read your transactions. You can disconnect the bank at any time from your dashboard or directly with Plaid.',
-  },
-  {
-    q: 'Is GrumpyWhales MTD compatible?',
-    a: 'GrumpyWhales focuses on invoicing and accounts-receivable workflow. It is not currently an HMRC-recognised Making Tax Digital (MTD) bridging tool. For MTD VAT or MTD ITSA filing you’ll still need a separate HMRC-recognised tool; the invoice data inside GrumpyWhales can be exported as CSV to feed into one.',
+    q: 'Who is the admin of an event I create?',
+    a: 'You are. Whoever creates the event is the only admin and the only person who can edit its details, change its status, or delete it.',
   },
 ];
 
@@ -87,7 +66,6 @@ const FAQ_LD = {
   })),
 };
 
-// ─── Page ────────────────────────────────────────────────────────────────────
 export default function Home() {
   return (
     <main className="min-h-screen">
@@ -116,145 +94,110 @@ export default function Home() {
           FREE · NO CARD REQUIRED
         </div>
         <h1 className="text-5xl sm:text-6xl font-bold leading-tight mb-6" style={{ fontFamily: 'var(--font-display)' }}>
-          Get paid faster.<br />
-          <span style={{ color: 'var(--color-accent)' }}>Without nagging.</span>
+          Create an event.<br />
+          <span style={{ color: 'var(--color-accent)' }}>Get paid on time.</span>
         </h1>
         <p className="text-lg text-[color:var(--color-muted)] max-w-2xl mx-auto mb-10">
-          Free invoicing software for UK freelancers, sole traders and small limited companies.
-          Send invoices, watch GrumpyWhales auto-match incoming bank payments via Open Banking,
-          and let it chase overdue clients on your behalf.
+          GrumpyWhales lets you set up a paid event in under a minute, share it with attendees,
+          and collect their fees without chasing. You stay the admin. We do the matching.
         </p>
         <Link href="/register" className="inline-block px-8 py-3 rounded-full font-medium text-base" style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
-          Get started — it&apos;s free →
+          Create your first event — it&apos;s free →
         </Link>
-        <p className="text-xs text-[color:var(--color-muted)] mt-4">
-          Always free · No card · No upgrade prompts · UK bank accounts via Plaid Open Banking
-        </p>
       </section>
 
-      {/* 3 FEATURES */}
-      <section className="max-w-5xl mx-auto px-6 py-20 grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[
-          { title: 'Send invoices',     body: 'Create, customise and email professional invoices to clients in under a minute. PDF download and a unique bank payment reference are generated automatically for each invoice.' },
-          { title: 'Auto-detect paid',  body: 'GrumpyWhales watches your UK bank account via Plaid Open Banking and matches every incoming transaction against your open invoices, marking them paid the moment money lands.' },
-          { title: 'Chase + thank',     body: 'When an invoice goes overdue, GrumpyWhales sends polite then progressively firmer reminders. When payment arrives, it sends a thank-you on your behalf.' },
-        ].map(f => (
-          <div key={f.title} className="p-6 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
-            <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-fg)' }}>{f.title}</h3>
-            <p className="text-sm text-[color:var(--color-muted)]">{f.body}</p>
-          </div>
-        ))}
-      </section>
-
-      {/* WHO IT'S FOR */}
-      <section className="max-w-5xl mx-auto px-6 pb-20" id="who-its-for">
-        <h2 className="text-3xl font-semibold text-center mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-          Built for UK self-employed people
+      {/* HOW IT WORKS */}
+      <section id="how-it-works" className="max-w-5xl mx-auto px-6 py-16">
+        <h2 className="text-3xl font-semibold mb-12 text-center" style={{ fontFamily: 'var(--font-display)' }}>
+          How it works
         </h2>
-        <p className="text-center text-[color:var(--color-muted)] max-w-2xl mx-auto mb-10">
-          Whether you trade as an individual or through a limited company, GrumpyWhales gives you
-          everything you need to bill clients and get paid — without the bloat of full accounting suites.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {[
-            { who: 'Sole traders & freelancers',        body: 'Self-employed designers, writers, developers, photographers and tradespeople billing clients direct. One bank, simple invoices, automatic payment tracking.' },
-            { who: 'Consultants & contractors',         body: 'Day-rate consultants and IT contractors invoicing through their own company. Sequential invoice numbers and clear payment references on every invoice.' },
-            { who: 'Small limited companies',           body: 'Directors of single-person and small Ltd companies who want polished invoicing without paying for FreshBooks or QuickBooks.' },
-            { who: 'Side-hustlers & part-time traders', body: 'People earning self-employment income alongside a job. GrumpyWhales scales down to one invoice a year, with no minimum spend.' },
-          ].map(item => (
-            <div key={item.who} className="p-5 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
-              <h3 className="text-base font-semibold mb-1.5" style={{ color: 'var(--color-fg)' }}>{item.who}</h3>
-              <p className="text-sm text-[color:var(--color-muted)]">{item.body}</p>
+            {
+              n: '1',
+              title: 'Create an event',
+              body: 'Title, description, time, location, fee. Sixty seconds. You are now the event admin.',
+            },
+            {
+              n: '2',
+              title: 'Share the reference',
+              body: 'We generate a unique payment reference per event. Attendees use it when they transfer their fee.',
+            },
+            {
+              n: '3',
+              title: 'Get paid, on time',
+              body: 'GrumpyWhales matches incoming bank transfers to the event and flags anyone who hasn\'t paid yet.',
+            },
+          ].map(step => (
+            <div key={step.n} className="p-6 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
+              <div className="w-9 h-9 rounded-full flex items-center justify-center mb-4 font-semibold" style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
+                {step.n}
+              </div>
+              <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: 'var(--font-display)' }}>{step.title}</h3>
+              <p className="text-sm" style={{ color: 'var(--color-muted)' }}>{step.body}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
-      <section className="max-w-4xl mx-auto px-6 pb-20" id="how-it-works">
-        <h2 className="text-3xl font-semibold text-center mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-          How GrumpyWhales works
+      {/* WHO IT'S FOR */}
+      <section className="max-w-5xl mx-auto px-6 py-16">
+        <h2 className="text-3xl font-semibold mb-3 text-center" style={{ fontFamily: 'var(--font-display)' }}>
+          Built for hosts who hate chasing
         </h2>
-        <p className="text-center text-[color:var(--color-muted)] max-w-2xl mx-auto mb-10">
-          Four steps from sign-up to your first &ldquo;paid&rdquo; email.
+        <p className="text-center mb-12 max-w-2xl mx-auto" style={{ color: 'var(--color-muted)' }}>
+          If you organise something people pay to attend, GrumpyWhales is for you.
         </p>
-        <ol className="space-y-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
           {[
-            { step: 'Sign up with Google or email',  body: 'No card required. No phone number. Set your trading name, address and VAT number once in Settings — they appear on every invoice.' },
-            { step: 'Connect your UK bank account',  body: 'A 30-second Plaid Open Banking flow links your business or personal account in read-only mode. We use the same FCA-regulated infrastructure used by Monzo, Starling and Revolut.' },
-            { step: 'Create and send invoices',      body: 'Add clients, build line items, choose VAT rate (0 / 5 / 20 %). GrumpyWhales generates a sequential invoice number and a unique bank payment reference. Email it directly from the dashboard.' },
-            { step: 'Sit back, GrumpyWhales watches', body: 'When your client pays, the incoming bank transaction is matched to the invoice and a thank-you email goes out. If they don’t pay, polite chase emails go out at the schedule you choose.' },
-          ].map((s, i) => (
-            <li key={s.step} className="flex gap-4 p-5 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
-              <span className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center font-semibold" style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
-                {i + 1}
-              </span>
-              <div>
-                <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--color-fg)' }}>{s.step}</h3>
-                <p className="text-sm text-[color:var(--color-muted)]">{s.body}</p>
-              </div>
-            </li>
+            'Meet-ups & community events',
+            'Workshops & classes',
+            'Supper clubs & dinners',
+            'Coaching cohorts',
+            'Co-working days',
+            'Memberships',
+            'Tours & retreats',
+            'Sports & fitness groups',
+          ].map(item => (
+            <div key={item} className="p-3 rounded-xl text-center" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', color: 'var(--color-fg)' }}>
+              {item}
+            </div>
           ))}
-        </ol>
-      </section>
-
-      {/* PRICING */}
-      <section className="max-w-3xl mx-auto px-6 pb-20 text-center" id="pricing">
-        <div className="p-8 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
-          <h2 className="text-2xl font-semibold mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-            Pricing? There isn&apos;t one.
-          </h2>
-          <p className="text-sm text-[color:var(--color-muted)] mb-2">
-            GrumpyWhales is <strong style={{ color: 'var(--color-fg)' }}>free</strong> — no trial countdown, no
-            invoice limits, no &ldquo;upgrade to unlock&rdquo; popups. Every feature works the same whether you send
-            one invoice a year or a hundred a month.
-          </p>
-          <p className="text-xs text-[color:var(--color-muted)] mt-4" style={{ opacity: 0.7 }}>
-            We may later add a Pro tier with optional extras, but the core (invoicing + payment matching +
-            chase emails) will stay free.
-          </p>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="max-w-3xl mx-auto px-6 pb-24" id="faq">
-        <h2 className="text-3xl font-semibold text-center mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-          Frequently asked questions
-        </h2>
-        <p className="text-center text-[color:var(--color-muted)] mb-10">
-          Everything else worth knowing before you sign up.
-        </p>
-        <div className="space-y-3">
-          {FAQS.map((f, i) => (
-            <details key={i} className="p-5 rounded-2xl group" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
-              <summary className="cursor-pointer font-semibold list-none flex justify-between items-center" style={{ color: 'var(--color-fg)' }}>
-                <span>{f.q}</span>
-                <span className="text-lg ml-3" style={{ color: 'var(--color-muted)' }}>+</span>
+      <section id="faq" className="max-w-3xl mx-auto px-6 py-16">
+        <h2 className="text-3xl font-semibold mb-8 text-center" style={{ fontFamily: 'var(--font-display)' }}>FAQ</h2>
+        <div style={{ borderTop: '1px solid var(--color-border)' }}>
+          {FAQS.map(item => (
+            <details key={item.q} className="group py-5" style={{ borderBottom: '1px solid var(--color-border)' }}>
+              <summary className="flex justify-between items-center cursor-pointer list-none font-medium text-base">
+                {item.q}
+                <span style={{ color: 'var(--color-accent)', fontSize: '1.25rem', lineHeight: 1, flexShrink: 0, marginLeft: '1rem' }}>+</span>
               </summary>
-              <p className="text-sm mt-3" style={{ color: 'var(--color-muted)', lineHeight: 1.7 }}>{f.a}</p>
+              <p className="mt-3 text-sm leading-relaxed" style={{ color: 'var(--color-muted)' }}>{item.a}</p>
             </details>
           ))}
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="max-w-3xl mx-auto px-6 pb-24 text-center">
-        <h2 className="text-3xl font-semibold mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-          Stop chasing. Start whaling.
+      {/* CTA */}
+      <section className="max-w-3xl mx-auto px-6 py-20 text-center">
+        <h2 className="text-4xl font-semibold mb-6" style={{ fontFamily: 'var(--font-display)' }}>
+          Stop chasing.<br />
+          <span style={{ color: 'var(--color-accent)' }}>Start hosting.</span>
         </h2>
-        <p className="text-[color:var(--color-muted)] mb-8">
-          Two minutes to your first invoice. No card. No upgrade screens. Just invoicing that gets out of your way.
-        </p>
-        <Link href="/register" className="inline-block px-8 py-3 rounded-full font-medium text-base" style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
-          Create my free account →
+        <Link href="/register" className="inline-block px-8 py-3 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
+          Create your first event →
         </Link>
       </section>
 
-      <footer className="max-w-5xl mx-auto px-6 py-10 border-t text-sm flex justify-between" style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}>
-        <span>© {new Date().getFullYear()} GrumpyWhales · Built for UK freelancers</span>
-        <div className="flex gap-4">
-          <Link href="/privacy" className="hover:text-white">Privacy</Link>
-          <Link href="/terms"   className="hover:text-white">Terms</Link>
+      <footer className="max-w-6xl mx-auto px-6 py-10 text-sm flex flex-col sm:flex-row justify-between items-center gap-3" style={{ color: 'var(--color-muted)', borderTop: '1px solid var(--color-border)' }}>
+        <p>© 2026 GrumpyWhales</p>
+        <div className="flex gap-5">
+          <Link href="/privacy" style={{ color: 'var(--color-muted)' }}>Privacy</Link>
+          <Link href="/terms"   style={{ color: 'var(--color-muted)' }}>Terms</Link>
         </div>
       </footer>
     </main>

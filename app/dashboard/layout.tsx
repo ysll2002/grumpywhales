@@ -18,8 +18,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <nav className="flex flex-col gap-1 px-2 text-sm">
           {[
             { href: '/dashboard',          label: 'Overview' },
-            { href: '/dashboard/invoices', label: 'Invoices' },
-            { href: '/dashboard/clients',  label: 'Clients' },
+            { href: '/dashboard/events',   label: 'Events' },
             { href: '/dashboard/banking',  label: 'Banking' },
             { href: '/dashboard/settings', label: 'Settings' },
           ].map(item => (
