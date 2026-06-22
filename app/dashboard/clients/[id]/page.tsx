@@ -65,17 +65,17 @@ export default function EditClient({ params }: { params: Promise<{ id: string }>
         <Field label="Billing address"><textarea rows={3} value={form.billing_address ?? ''} onChange={e => setForm({ ...form, billing_address: e.target.value })} className={inputCls} /></Field>
         <Field label="Internal notes"><textarea rows={2} value={form.notes ?? ''} onChange={e => setForm({ ...form, notes: e.target.value })} className={inputCls} /></Field>
 
-        {error && <p className="text-xs" style={{ color: '#F87171' }}>{error}</p>}
+        {error && <p className="text-xs" style={{ color: 'var(--color-red)' }}>{error}</p>}
 
         <div className="flex justify-between pt-2">
           <div className="flex gap-3">
             <button disabled={busy} type="submit" className="px-6 py-2.5 rounded-full font-medium text-sm disabled:opacity-50"
-              style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
+              style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
               {busy ? 'Saving…' : 'Save'}
             </button>
             <Link href="/dashboard/clients" className="px-6 py-2.5 rounded-full text-sm" style={{ color: 'var(--color-muted)' }}>Cancel</Link>
           </div>
-          <button type="button" onClick={onArchive} className="px-4 py-2.5 rounded-full text-sm" style={{ color: '#F87171' }}>
+          <button type="button" onClick={onArchive} className="px-4 py-2.5 rounded-full text-sm" style={{ color: 'var(--color-red)' }}>
             Archive
           </button>
         </div>
@@ -84,7 +84,7 @@ export default function EditClient({ params }: { params: Promise<{ id: string }>
   );
 }
 
-const inputCls = 'w-full px-3 py-2.5 rounded-xl text-sm bg-[color:var(--color-bg)] border border-[color:var(--color-border)] text-[color:var(--color-fg)]';
+const inputCls = 'w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-[color:var(--color-border)] text-[color:var(--color-fg)]';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

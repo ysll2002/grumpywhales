@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { formatEventDateTime, formatMoney, RECURRENCE_LABELS, type Event } from '@/lib/events';
 
 const statusBadge: Record<string, { bg: string; fg: string; label: string }> = {
-  draft:     { bg: '#2A2F37', fg: '#8B949E', label: 'Draft' },
-  published: { bg: '#1E3A5F', fg: '#5BA3F5', label: 'Live' },
-  closed:    { bg: '#1F2937', fg: '#9CA3AF', label: 'Closed' },
-  cancelled: { bg: '#3F1F1F', fg: '#F87171', label: 'Cancelled' },
+  draft:     { bg: '#E5E7EB', fg: '#374151',              label: 'Draft' },
+  published: { bg: '#D1FAE5', fg: 'var(--color-accent-dk)', label: 'Live' },
+  closed:    { bg: '#E5E7EB', fg: '#374151',              label: 'Closed' },
+  cancelled: { bg: '#FEE2E2', fg: 'var(--color-red)',     label: 'Cancelled' },
 };
 
 export default async function EventsListPage() {
@@ -32,7 +32,7 @@ export default async function EventsListPage() {
         <Link
           href="/dashboard/events/new"
           className="px-5 py-2.5 rounded-full text-sm font-medium"
-          style={{ backgroundColor: 'var(--color-accent)', color: '#0A0D12', textDecoration: 'none' }}
+          style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}
         >
           + New event
         </Link>
@@ -45,7 +45,7 @@ export default async function EventsListPage() {
           <Link
             href="/dashboard/events/new"
             className="inline-block px-6 py-3 rounded-full text-sm font-medium"
-            style={{ backgroundColor: 'var(--color-accent)', color: '#0A0D12', textDecoration: 'none' }}
+            style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}
           >
             Create event →
           </Link>
@@ -68,7 +68,7 @@ export default async function EventsListPage() {
                       {badge.label}
                     </span>
                     {ev.recurrence && ev.recurrence !== 'none' && (
-                      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold" style={{ backgroundColor: '#2A2F37', color: '#8B949E' }}>
+                      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold" style={{ backgroundColor: '#E5E7EB', color: '#374151' }}>
                         ↻ {RECURRENCE_LABELS[ev.recurrence]}
                       </span>
                     )}

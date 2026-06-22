@@ -1,17 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  --color-bg:     #0E1116;
-  --color-fg:     #E8EAED;
-  --color-muted:  #8B949E;
-  --color-accent: #5BA3F5;
-  --color-card:   #161B22;
-  --color-border: #2A2F37;
+  /* Football kit palette — bright pitch green, cream, referee yellow / red */
+  --color-bg:        #FAF7F0;   /* warm cream pitch-side */
+  --color-fg:        #0F1A14;   /* deep grass green-black for text */
+  --color-muted:     #6B6B6B;
+  --color-accent:    #00A859;   /* pitch green */
+  --color-accent-dk: #0A4D2E;   /* deep pitch */
+  --color-card:      #FFFFFF;
+  --color-border:    #E5E2D8;
+  --color-yellow:    #FFD600;   /* referee yellow card */
+  --color-red:       #E53935;   /* referee red card */
+  --color-dark:      #0A0A0A;
 }
 
 html, body {
   background: var(--color-bg);
   color: var(--color-fg);
-  font-family: var(--font-body), 'Inter', system-ui, sans-serif;
+  font-family: var(--font-body), 'Manrope', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle pitch-line decoration behind hero */
+.pitch-bg {
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0,168,89,0.06) 0 1px, transparent 1px 80px),
+    repeating-linear-gradient(90deg, rgba(0,168,89,0.04) 0 1px, transparent 1px 80px);
 }

@@ -8,7 +8,7 @@ const inputStyle: React.CSSProperties = {
   padding: '0.75rem 1rem',
   borderRadius: '0.75rem',
   border: '1px solid var(--color-border)',
-  backgroundColor: '#0A0D12',
+  backgroundColor: '#FFFFFF',
   color: 'var(--color-fg)',
   fontSize: '0.9rem',
   outline: 'none',
@@ -146,10 +146,10 @@ export default function EditEventForm({ event }: { event: Event }) {
       </div>
 
       {error && (
-        <p className="text-sm py-2 px-3 rounded-lg" style={{ backgroundColor: '#3F1F1F', color: '#F87171' }}>{error}</p>
+        <p className="text-sm py-2 px-3 rounded-lg" style={{ backgroundColor: '#FEE2E2', color: 'var(--color-red)' }}>{error}</p>
       )}
       {savedFlash && (
-        <p className="text-sm py-2 px-3 rounded-lg" style={{ backgroundColor: '#1E3A2A', color: '#6EE7B7' }}>Saved.</p>
+        <p className="text-sm py-2 px-3 rounded-lg" style={{ backgroundColor: '#D1FAE5', color: 'var(--color-accent-dk)' }}>Saved.</p>
       )}
 
       <div className="flex items-center justify-between gap-3 pt-2">
@@ -158,7 +158,7 @@ export default function EditEventForm({ event }: { event: Event }) {
           onClick={remove}
           disabled={deleting}
           className="text-sm"
-          style={{ color: '#F87171', background: 'none', border: 'none', cursor: deleting ? 'not-allowed' : 'pointer' }}
+          style={{ color: 'var(--color-red)', background: 'none', border: 'none', cursor: deleting ? 'not-allowed' : 'pointer' }}
         >
           {deleting ? 'Deleting…' : 'Delete event'}
         </button>
@@ -168,7 +168,7 @@ export default function EditEventForm({ event }: { event: Event }) {
           className="px-6 py-3 rounded-full text-sm font-medium"
           style={{
             backgroundColor: saving ? 'var(--color-border)' : 'var(--color-accent)',
-            color: '#0A0D12',
+            color: '#FFFFFF',
             border: 'none',
             cursor: saving ? 'not-allowed' : 'pointer',
           }}

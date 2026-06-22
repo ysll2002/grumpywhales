@@ -134,11 +134,11 @@ export default function NewInvoice() {
 
         <Field label="Internal notes (not on invoice)"><textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} className={inputCls} /></Field>
 
-        {error && <p className="text-xs" style={{ color: '#F87171' }}>{error}</p>}
+        {error && <p className="text-xs" style={{ color: 'var(--color-red)' }}>{error}</p>}
 
         <div className="flex gap-3">
           <button disabled={busy} type="submit" className="px-6 py-2.5 rounded-full font-medium text-sm disabled:opacity-50"
-            style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
+            style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
             {busy ? 'Creating…' : 'Create invoice'}
           </button>
           <Link href="/dashboard/invoices" className="px-6 py-2.5 rounded-full text-sm" style={{ color: 'var(--color-muted)' }}>Cancel</Link>
@@ -154,7 +154,7 @@ function addDays(d: Date, n: number): string {
   return out.toISOString().slice(0, 10);
 }
 
-const inputCls = 'w-full px-3 py-2.5 rounded-xl text-sm bg-[color:var(--color-bg)] border border-[color:var(--color-border)] text-[color:var(--color-fg)]';
+const inputCls = 'w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-[color:var(--color-border)] text-[color:var(--color-fg)]';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

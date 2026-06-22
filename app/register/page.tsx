@@ -58,7 +58,7 @@ export default function Register() {
         <button
           onClick={onGoogle}
           className="w-full py-2.5 rounded-xl font-medium text-sm mb-4 disabled:opacity-50"
-          style={{ backgroundColor: '#FFF', color: '#0E1116' }}
+          style={{ backgroundColor: '#FFFFFF', color: 'var(--color-dark)', border: '1px solid var(--color-border)' }}
           disabled={busy}
         >
           Continue with Google
@@ -91,13 +91,13 @@ export default function Register() {
             </span>
           </label>
 
-          {error && <p className="text-xs" style={{ color: '#F87171' }}>{error}</p>}
+          {error && <p className="text-xs" style={{ color: 'var(--color-red)' }}>{error}</p>}
 
           <button
             disabled={busy || !agreed}
             type="submit"
             className="w-full py-2.5 rounded-xl font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}
+            style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}
           >
             {busy ? 'Creating…' : 'Create account'}
           </button>

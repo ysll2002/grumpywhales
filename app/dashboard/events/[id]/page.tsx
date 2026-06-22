@@ -29,8 +29,8 @@ export default async function EventAdminPage({ params }: { params: Promise<{ id:
       <div className="flex items-start justify-between mb-2 flex-wrap gap-4">
         <h1 className="text-3xl font-semibold" style={{ fontFamily: 'var(--font-display)' }}>{ev.title}</h1>
         <span className="text-[10px] uppercase tracking-wider px-3 py-1 rounded-full font-semibold" style={{
-          backgroundColor: ev.status === 'published' ? '#1E3A5F' : ev.status === 'cancelled' ? '#3F1F1F' : '#2A2F37',
-          color:           ev.status === 'published' ? '#5BA3F5' : ev.status === 'cancelled' ? '#F87171' : '#8B949E',
+          backgroundColor: ev.status === 'published' ? '#D1FAE5' : ev.status === 'cancelled' ? '#FEE2E2' : '#E5E7EB',
+          color:           ev.status === 'published' ? 'var(--color-accent-dk)' : ev.status === 'cancelled' ? 'var(--color-red)' : '#374151',
         }}>
           {ev.status}
         </span>

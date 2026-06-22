@@ -79,31 +79,33 @@ export default function Home() {
           GrumpyWhales
         </Link>
         <div className="flex items-center gap-4 text-sm">
-          <Link href="#how-it-works" className="text-[color:var(--color-muted)] hover:text-white hidden sm:inline">How it works</Link>
-          <Link href="#faq"          className="text-[color:var(--color-muted)] hover:text-white hidden sm:inline">FAQ</Link>
-          <Link href="/login"        className="text-[color:var(--color-muted)] hover:text-white">Log in</Link>
-          <Link href="/register"     className="px-5 py-2 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
+          <Link href="#how-it-works" className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)] hidden sm:inline">How it works</Link>
+          <Link href="#faq"          className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)] hidden sm:inline">FAQ</Link>
+          <Link href="/login"        className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)]">Log in</Link>
+          <Link href="/register"     className="px-5 py-2 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
             Get started
           </Link>
         </div>
       </nav>
 
       {/* HERO */}
-      <section className="max-w-4xl mx-auto px-6 pt-24 pb-12 text-center">
-        <div className="inline-block px-3 py-1 rounded-full text-xs font-medium mb-6" style={{ backgroundColor: '#1E4736', color: '#34D399', letterSpacing: '0.04em' }}>
-          FREE · NO CARD REQUIRED
+      <section className="pitch-bg">
+        <div className="max-w-4xl mx-auto px-6 pt-24 pb-12 text-center">
+          <div className="inline-block px-3 py-1 rounded-full text-xs font-bold mb-6" style={{ backgroundColor: 'var(--color-yellow)', color: 'var(--color-dark)', letterSpacing: '0.06em' }}>
+            FREE · NO CARD REQUIRED
+          </div>
+          <h1 className="text-5xl sm:text-6xl font-bold leading-tight mb-6" style={{ fontFamily: 'var(--font-display)' }}>
+            Create an event.<br />
+            <span style={{ color: 'var(--color-accent)' }}>Get paid on time.</span>
+          </h1>
+          <p className="text-lg text-[color:var(--color-muted)] max-w-2xl mx-auto mb-10">
+            GrumpyWhales lets you set up a paid event in under a minute, share it with attendees,
+            and collect their fees without chasing. You stay the admin. We do the matching.
+          </p>
+          <Link href="/register" className="inline-block px-8 py-3 rounded-full font-medium text-base" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
+            Create your first event — it&apos;s free →
+          </Link>
         </div>
-        <h1 className="text-5xl sm:text-6xl font-bold leading-tight mb-6" style={{ fontFamily: 'var(--font-display)' }}>
-          Create an event.<br />
-          <span style={{ color: 'var(--color-accent)' }}>Get paid on time.</span>
-        </h1>
-        <p className="text-lg text-[color:var(--color-muted)] max-w-2xl mx-auto mb-10">
-          GrumpyWhales lets you set up a paid event in under a minute, share it with attendees,
-          and collect their fees without chasing. You stay the admin. We do the matching.
-        </p>
-        <Link href="/register" className="inline-block px-8 py-3 rounded-full font-medium text-base" style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
-          Create your first event — it&apos;s free →
-        </Link>
       </section>
 
       {/* HOW IT WORKS */}
@@ -130,7 +132,7 @@ export default function Home() {
             },
           ].map(step => (
             <div key={step.n} className="p-6 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
-              <div className="w-9 h-9 rounded-full flex items-center justify-center mb-4 font-semibold" style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
+              <div className="w-9 h-9 rounded-full flex items-center justify-center mb-4 font-bold" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', fontFamily: 'var(--font-display)' }}>
                 {step.n}
               </div>
               <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: 'var(--font-display)' }}>{step.title}</h3>
@@ -188,7 +190,7 @@ export default function Home() {
           Stop chasing.<br />
           <span style={{ color: 'var(--color-accent)' }}>Start hosting.</span>
         </h2>
-        <Link href="/register" className="inline-block px-8 py-3 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
+        <Link href="/register" className="inline-block px-8 py-3 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
           Create your first event →
         </Link>
       </section>

@@ -18,7 +18,7 @@ export default async function ClientsPage() {
           <h1 className="text-3xl font-semibold" style={{ fontFamily: 'var(--font-display)' }}>Clients</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>People you bill</p>
         </div>
-        <Link href="/dashboard/clients/new" className="px-5 py-2.5 rounded-full font-medium text-sm" style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
+        <Link href="/dashboard/clients/new" className="px-5 py-2.5 rounded-full font-medium text-sm" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
           + New client
         </Link>
       </div>
@@ -39,7 +39,7 @@ export default async function ClientsPage() {
             </thead>
             <tbody>
               {clients.map(c => (
-                <tr key={c.id} className="hover:bg-[#1A2030]" style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <tr key={c.id} className="hover:bg-[color:var(--color-bg)]" style={{ borderBottom: '1px solid var(--color-border)' }}>
                   <td className="px-5 py-3 font-medium">{c.name}</td>
                   <td className="px-5 py-3" style={{ color: 'var(--color-muted)' }}>{c.company_name ?? '—'}</td>
                   <td className="px-5 py-3" style={{ color: 'var(--color-muted)' }}>{c.email}</td>

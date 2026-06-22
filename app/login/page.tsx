@@ -33,7 +33,7 @@ export default function Login() {
         <button
           onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
           className="w-full py-2.5 rounded-xl font-medium text-sm mb-4"
-          style={{ backgroundColor: '#FFF', color: '#0E1116' }}
+          style={{ backgroundColor: '#FFFFFF', color: 'var(--color-dark)', border: '1px solid var(--color-border)' }}
         >
           Continue with Google
         </button>
@@ -47,8 +47,8 @@ export default function Login() {
             className="w-full px-3 py-2.5 rounded-xl text-sm" style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-fg)' }} />
           <input type="password" required placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
             className="w-full px-3 py-2.5 rounded-xl text-sm" style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-fg)' }} />
-          {error && <p className="text-xs" style={{ color: '#F87171' }}>{error}</p>}
-          <button disabled={busy} type="submit" className="w-full py-2.5 rounded-xl font-medium text-sm disabled:opacity-50" style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
+          {error && <p className="text-xs" style={{ color: 'var(--color-red)' }}>{error}</p>}
+          <button disabled={busy} type="submit" className="w-full py-2.5 rounded-xl font-medium text-sm disabled:opacity-50" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
         </form>

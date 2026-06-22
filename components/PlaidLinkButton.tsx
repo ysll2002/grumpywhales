@@ -77,11 +77,12 @@ export default function PlaidLinkButton() {
         type="button"
         onClick={() => open()}
         disabled={disabled}
-        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-full px-5 py-2.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+        style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}
       >
         {loading ? 'Connecting…' : 'Connect a bank account'}
       </button>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm" style={{ color: 'var(--color-red)' }}>{error}</p>}
     </div>
   );
 }

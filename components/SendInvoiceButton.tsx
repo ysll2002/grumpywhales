@@ -24,10 +24,10 @@ export default function SendInvoiceButton({ invoiceId, clientEmail }: { invoiceI
   return (
     <div className="flex flex-col items-end gap-2">
       <button onClick={onSend} disabled={busy} className="px-5 py-2.5 rounded-full font-medium text-sm disabled:opacity-50"
-        style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
+        style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
         {busy ? 'Sending…' : 'Send to client →'}
       </button>
-      {error && <p className="text-xs" style={{ color: '#F87171' }}>{error}</p>}
+      {error && <p className="text-xs" style={{ color: 'var(--color-red)' }}>{error}</p>}
     </div>
   );
 }

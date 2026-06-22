@@ -8,7 +8,7 @@ const inputStyle: React.CSSProperties = {
   padding: '0.75rem 1rem',
   borderRadius: '0.75rem',
   border: '1px solid var(--color-border)',
-  backgroundColor: '#0A0D12',
+  backgroundColor: '#FFFFFF',
   color: 'var(--color-fg)',
   fontSize: '0.9rem',
   outline: 'none',
@@ -166,7 +166,7 @@ export default function CreateEventForm() {
       </div>
 
       {error && (
-        <p className="text-sm py-2 px-3 rounded-lg" style={{ backgroundColor: '#3F1F1F', color: '#F87171' }}>
+        <p className="text-sm py-2 px-3 rounded-lg" style={{ backgroundColor: '#FEE2E2', color: 'var(--color-red)' }}>
           {error}
         </p>
       )}
@@ -178,7 +178,7 @@ export default function CreateEventForm() {
           className="px-6 py-3 rounded-full text-sm font-medium"
           style={{
             backgroundColor: loading ? 'var(--color-border)' : 'var(--color-accent)',
-            color: '#0A0D12',
+            color: '#FFFFFF',
             border: 'none',
             cursor: loading ? 'not-allowed' : 'pointer',
           }}

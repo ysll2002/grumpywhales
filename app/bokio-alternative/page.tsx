@@ -115,9 +115,9 @@ export default function BokioAlternativePage() {
           GrumpyWhales
         </Link>
         <div className="flex items-center gap-4 text-sm">
-          <Link href="/#how-it-works" className="text-[color:var(--color-muted)] hover:text-white hidden sm:inline">How it works</Link>
-          <Link href="/login"         className="text-[color:var(--color-muted)] hover:text-white">Log in</Link>
-          <Link href="/register"      className="px-5 py-2 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
+          <Link href="/#how-it-works" className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)] hidden sm:inline">How it works</Link>
+          <Link href="/login"         className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)]">Log in</Link>
+          <Link href="/register"      className="px-5 py-2 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
             Get started
           </Link>
         </div>
@@ -128,12 +128,12 @@ export default function BokioAlternativePage() {
         <div className="max-w-3xl mx-auto px-6 mt-4">
           <div
             className="rounded-2xl px-5 py-3 flex items-center justify-between text-sm"
-            style={{ backgroundColor: '#3B1E1E', border: '1px solid #6B2A2A', color: '#FCA5A5' }}
+            style={{ backgroundColor: '#FEE2E2', border: '1px solid var(--color-red)', color: '#7F1D1D' }}
             role="alert"
           >
             <span>
-              <strong>Bokio is closing on 7 July 2026.</strong>{' '}
-              <span style={{ color: '#FECACA' }}>{left} days left to move your invoices.</span>
+              <strong style={{ color: 'var(--color-red)' }}>Bokio is closing on 7 July 2026.</strong>{' '}
+              <span>{left} days left to move your invoices.</span>
             </span>
           </div>
         </div>
@@ -141,7 +141,7 @@ export default function BokioAlternativePage() {
 
       {/* Hero */}
       <section className="max-w-3xl mx-auto px-6 pt-12 pb-10 text-center">
-        <div className="inline-block px-3 py-1 rounded-full text-xs font-medium mb-6" style={{ backgroundColor: '#1E4736', color: '#34D399', letterSpacing: '0.04em' }}>
+        <div className="inline-block px-3 py-1 rounded-full text-xs font-bold mb-6" style={{ backgroundColor: 'var(--color-yellow)', color: 'var(--color-dark)', letterSpacing: '0.06em' }}>
           THE FREE BOKIO ALTERNATIVE FOR UK FREELANCERS
         </div>
         <h1 className="text-4xl sm:text-5xl font-bold leading-tight mb-5" style={{ fontFamily: 'var(--font-display)' }}>
@@ -155,7 +155,7 @@ export default function BokioAlternativePage() {
           <Link
             href="/register"
             className="px-8 py-3 rounded-full font-medium text-base"
-            style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}
+            style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}
           >
             Move to GrumpyWhales — free
           </Link>
@@ -272,7 +272,7 @@ export default function BokioAlternativePage() {
         <Link
           href="/register"
           className="px-8 py-3 rounded-full font-medium text-base inline-block"
-          style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}
+          style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}
         >
           Get started — free forever
         </Link>
@@ -281,8 +281,8 @@ export default function BokioAlternativePage() {
       {/* Footer */}
       <footer className="max-w-6xl mx-auto px-6 py-8 text-center text-xs" style={{ color: 'var(--color-muted)' }}>
         <div className="flex justify-center gap-4 mb-2">
-          <Link href="/privacy" className="hover:text-white">Privacy</Link>
-          <Link href="/terms"   className="hover:text-white">Terms</Link>
+          <Link href="/privacy" className="hover:text-[color:var(--color-fg)]">Privacy</Link>
+          <Link href="/terms"   className="hover:text-[color:var(--color-fg)]">Terms</Link>
         </div>
         © {new Date().getUTCFullYear()} GrumpyWhales
       </footer>
@@ -297,7 +297,7 @@ function Row({
   usAccent?: boolean; bokioAccent?: boolean; last?: boolean;
 }) {
   const usStyle    = usAccent    ? { color: 'var(--color-accent)', fontWeight: 600 as const } : {};
-  const bokioStyle = bokioAccent ? { color: '#FCA5A5',             fontWeight: 600 as const } : { color: 'var(--color-muted)' };
+  const bokioStyle = bokioAccent ? { color: 'var(--color-red)',    fontWeight: 600 as const } : { color: 'var(--color-muted)' };
   return (
     <tr style={last ? {} : { borderBottom: '1px solid var(--color-border)' }}>
       <td className="px-5 py-3">{label}</td>
@@ -312,7 +312,7 @@ function Step({ n, title, children, last }: { n: number; title: string; children
     <li className="flex gap-4">
       <div
         className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold"
-        style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}
+        style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', fontFamily: 'var(--font-display)' }}
       >
         {n}
       </div>

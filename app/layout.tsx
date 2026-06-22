@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import { Inter, Playfair_Display } from 'next/font/google';
+import { Manrope, Bungee } from 'next/font/google';
 import { SessionProvider } from 'next-auth/react';
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
-const body    = Inter({ subsets: ['latin'], variable: '--font-body' });
-const display = Playfair_Display({ subsets: ['latin'], variable: '--font-display' });
+const body    = Manrope({ subsets: ['latin'], variable: '--font-body' });
+const display = Bungee({  subsets: ['latin'], variable: '--font-display', weight: '400' });
 
 export const metadata: Metadata = {
   title: {
@@ -87,7 +87,7 @@ export const metadata: Metadata = {
   other: {
     'geo.region':   'GB',
     'geo.country':  'United Kingdom',
-    'theme-color':  '#0E1116',
+    'theme-color':  '#00A859',
   },
 };
 

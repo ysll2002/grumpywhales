@@ -4,11 +4,11 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { formatMoney, formatDate } from '@/lib/money';
 
 const STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
-  draft:     { bg: '#2A2F37', fg: '#9CA3AF' },
-  sent:      { bg: '#1E3A5F', fg: '#5BA3F5' },
-  paid:      { bg: '#1E4736', fg: '#34D399' },
-  overdue:   { bg: '#4C1D1D', fg: '#F87171' },
-  cancelled: { bg: '#2A2F37', fg: '#6B7280' },
+  draft:     { bg: '#E5E7EB', fg: '#374151' },
+  sent:      { bg: '#FFF4B8', fg: '#7C5800' },
+  paid:      { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
+  overdue:   { bg: '#FEE2E2', fg: 'var(--color-red)' },
+  cancelled: { bg: '#E5E7EB', fg: '#6B7280' },
 };
 
 export default async function InvoicesPage() {
@@ -26,7 +26,7 @@ export default async function InvoicesPage() {
           <h1 className="text-3xl font-semibold" style={{ fontFamily: 'var(--font-display)' }}>Invoices</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>Drafts, sent and paid</p>
         </div>
-        <Link href="/dashboard/invoices/new" className="px-5 py-2.5 rounded-full font-medium text-sm" style={{ backgroundColor: 'var(--color-accent)', color: '#0E1116' }}>
+        <Link href="/dashboard/invoices/new" className="px-5 py-2.5 rounded-full font-medium text-sm" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
           + New invoice
         </Link>
       </div>
@@ -50,7 +50,7 @@ export default async function InvoicesPage() {
                 const client = Array.isArray(inv.clients) ? inv.clients[0] : inv.clients;
                 const style = STATUS_STYLE[inv.status] ?? STATUS_STYLE.draft;
                 return (
-                  <tr key={inv.id} className="hover:bg-[#1A2030]" style={{ borderBottom: '1px solid var(--color-border)' }}>
+                  <tr key={inv.id} className="hover:bg-[color:var(--color-bg)]" style={{ borderBottom: '1px solid var(--color-border)' }}>
                     <td className="px-5 py-3 font-mono">
                       <Link href={`/dashboard/invoices/${inv.id}`} style={{ color: 'var(--color-accent)' }}>{inv.invoice_number}</Link>
                     </td>

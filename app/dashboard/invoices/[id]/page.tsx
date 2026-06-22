@@ -60,8 +60,8 @@ export default async function InvoiceDetail({ params }: { params: Promise<{ id: 
         </div>
         <div className="flex flex-col items-end gap-3">
           <span className="px-3 py-1 rounded-full text-xs font-medium uppercase" style={{
-            backgroundColor: inv.status === 'paid' ? '#1E4736' : inv.status === 'overdue' ? '#4C1D1D' : inv.status === 'sent' ? '#1E3A5F' : '#2A2F37',
-            color:           inv.status === 'paid' ? '#34D399' : inv.status === 'overdue' ? '#F87171' : inv.status === 'sent' ? '#5BA3F5' : '#9CA3AF',
+            backgroundColor: inv.status === 'paid' ? '#D1FAE5' : inv.status === 'overdue' ? '#FEE2E2' : inv.status === 'sent' ? '#FFF4B8' : '#E5E7EB',
+            color:           inv.status === 'paid' ? 'var(--color-accent-dk)' : inv.status === 'overdue' ? 'var(--color-red)' : inv.status === 'sent' ? '#7C5800' : '#374151',
           }}>{inv.status}</span>
           {inv.status === 'draft' && client?.email && (
             <SendInvoiceButton invoiceId={inv.id} clientEmail={client.email} />

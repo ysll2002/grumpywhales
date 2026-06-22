@@ -61,7 +61,7 @@ export default async function DashboardHome() {
       <Link
         href="/dashboard/events/new"
         className="inline-block px-6 py-3 rounded-full text-sm font-medium"
-        style={{ backgroundColor: 'var(--color-accent)', color: '#0A0D12', textDecoration: 'none' }}
+        style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}
       >
         + Create event
       </Link>
