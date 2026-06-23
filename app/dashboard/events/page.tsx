@@ -4,10 +4,9 @@ import Link from 'next/link';
 import { formatEventDateTime, formatMoney, RECURRENCE_LABELS, type Event } from '@/lib/events';
 
 const statusBadge: Record<string, { bg: string; fg: string; label: string }> = {
-  draft:     { bg: '#E5E7EB', fg: '#374151',              label: 'Draft' },
   published: { bg: '#D1FAE5', fg: 'var(--color-accent-dk)', label: 'Live' },
-  closed:    { bg: '#E5E7EB', fg: '#374151',              label: 'Closed' },
-  cancelled: { bg: '#FEE2E2', fg: 'var(--color-red)',     label: 'Cancelled' },
+  closed:    { bg: '#E5E7EB', fg: '#374151',                label: 'Closed' },
+  cancelled: { bg: '#FEE2E2', fg: 'var(--color-red)',       label: 'Cancelled' },
 };
 
 export default async function EventsListPage({ searchParams }: { searchParams: Promise<{ created?: string }> }) {
@@ -75,7 +74,7 @@ export default async function EventsListPage({ searchParams }: { searchParams: P
       ) : (
         <div className="grid gap-3">
           {list.map(ev => {
-            const badge = statusBadge[ev.status] ?? statusBadge.draft;
+            const badge = statusBadge[ev.status] ?? statusBadge.published;
             return (
               <Link
                 key={ev.id}

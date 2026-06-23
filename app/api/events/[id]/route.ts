@@ -3,7 +3,7 @@ import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { type EventStatus, type EventRecurrence, type EventSignupMode } from '@/lib/events';
 
-const VALID_STATUS: EventStatus[] = ['draft', 'published', 'closed', 'cancelled'];
+const VALID_STATUS: EventStatus[] = ['published', 'closed', 'cancelled'];
 const VALID_RECURRENCE: EventRecurrence[] = ['none', 'daily', 'weekly', 'monthly'];
 const VALID_SIGNUP_MODE: EventSignupMode[] = ['first_come', 'curated'];
 

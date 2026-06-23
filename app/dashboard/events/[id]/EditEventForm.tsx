@@ -169,8 +169,7 @@ export default function EditEventForm({ event }: { event: Event }) {
       <div>
         <label style={labelStyle}>Status</label>
         <select value={status} onChange={e => setStatus(e.target.value as EventStatus)} style={inputStyle}>
-          <option value="draft">Draft — only you can see it</option>
-          <option value="published">Published — open to attendees</option>
+          <option value="published">Live — open to attendees</option>
           <option value="closed">Closed — no new attendees</option>
           <option value="cancelled">Cancelled</option>
         </select>

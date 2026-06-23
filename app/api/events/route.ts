@@ -3,7 +3,7 @@ import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { generateEventReference, type EventStatus, type EventRecurrence, type EventSignupMode } from '@/lib/events';
 
-const VALID_STATUS: EventStatus[] = ['draft', 'published', 'closed', 'cancelled'];
+const VALID_STATUS: EventStatus[] = ['published', 'closed', 'cancelled'];
 const VALID_RECURRENCE: EventRecurrence[] = ['none', 'daily', 'weekly', 'monthly'];
 const VALID_SIGNUP_MODE: EventSignupMode[] = ['first_come', 'curated'];
 
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   if (!Number.isFinite(amount) || amount < 0) {
     return NextResponse.json({ error: 'fee_invalid' }, { status: 400 });
   }
-  const finalStatus: EventStatus = VALID_STATUS.includes(status) ? status : 'draft';
+  const finalStatus: EventStatus = VALID_STATUS.includes(status) ? status : 'published';
   const finalRecurrence: EventRecurrence = VALID_RECURRENCE.includes(recurrence) ? recurrence : 'none';
   const finalSignupMode: EventSignupMode = VALID_SIGNUP_MODE.includes(signup_mode) ? signup_mode : 'first_come';
   let finalCapacity: number | null = null;
@@ -92,6 +92,19 @@ export async function POST(req: NextRequest) {
   if (error) {
     console.error('[events POST] insert failed', error);
     return NextResponse.json({ error: 'create_failed', detail: error.message }, { status: 500 });
+  }
+
+  // Auto-enrol the host as an accepted attendee — they shouldn't have to
+  // "sign up" for their own event. Host doesn't pay themselves either.
+  const { error: signupErr } = await supabase.from('event_signups').insert({
+    event_id:       data.id,
+    profile_id:     session.user.profileId,
+    status:         'accepted',
+    payment_status: 'free',
+  });
+  if (signupErr) {
+    // Non-fatal — event itself was created. Log and continue.
+    console.error('[events POST] host auto-signup failed', signupErr);
   }
 
   return NextResponse.json({ event: data }, { status: 201 });

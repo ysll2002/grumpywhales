@@ -12,7 +12,7 @@ export function generateEventReference(): string {
   return `GW-EVT-${suffix}`;
 }
 
-export type EventStatus = 'draft' | 'published' | 'closed' | 'cancelled';
+export type EventStatus = 'published' | 'closed' | 'cancelled';
 export type EventRecurrence = 'none' | 'daily' | 'weekly' | 'monthly';
 export type EventSignupMode = 'first_come' | 'curated';
 
