@@ -10,9 +10,10 @@ const statusBadge: Record<string, { bg: string; fg: string; label: string }> = {
   cancelled: { bg: '#FEE2E2', fg: 'var(--color-red)',     label: 'Cancelled' },
 };
 
-export default async function EventsListPage() {
+export default async function EventsListPage({ searchParams }: { searchParams: Promise<{ created?: string }> }) {
   const session = await auth();
   const profileId = session!.user.profileId;
+  const { created } = await searchParams;
 
   const { data: events } = await supabase
     .from('events')
@@ -21,9 +22,24 @@ export default async function EventsListPage() {
     .order('starts_at', { ascending: false });
 
   const list: Event[] = events ?? [];
+  const justCreated = created ? list.find(e => e.id === created) : null;
 
   return (
     <div className="p-8 max-w-5xl">
+      {justCreated && (
+        <div className="rounded-2xl px-5 py-4 mb-6 flex items-center justify-between gap-3"
+          style={{ backgroundColor: '#D1FAE5', border: '1px solid #A7F3D0' }}>
+          <p className="text-sm" style={{ color: 'var(--color-accent-dk)' }}>
+            ✓ <strong>Event successfully created</strong> — &ldquo;{justCreated.title}&rdquo; is saved as a draft.
+            Publish it from the event page to start collecting sign-ups.
+          </p>
+          <Link href={`/dashboard/events/${justCreated.id}`} className="text-sm font-medium whitespace-nowrap"
+            style={{ color: 'var(--color-accent-dk)' }}>
+            Open ↗
+          </Link>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-semibold mb-1" style={{ fontFamily: 'var(--font-display)' }}>Events</h1>

@@ -79,7 +79,7 @@ export default function CreateEventForm() {
       return;
     }
 
-    router.push(`/dashboard/events/${data.event.id}`);
+    router.push(`/dashboard/events?created=${data.event.id}`);
   };
 
   return (
