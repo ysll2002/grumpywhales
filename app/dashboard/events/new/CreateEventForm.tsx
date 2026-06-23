@@ -70,7 +70,7 @@ export default function CreateEventForm() {
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      setError(data.error || 'create_failed');
+      setError([data.error, data.detail].filter(Boolean).join(' — ') || 'create_failed');
       setLoading(false);
       return;
     }
