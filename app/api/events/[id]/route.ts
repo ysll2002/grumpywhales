@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
-import { type EventStatus, type EventRecurrence } from '@/lib/events';
+import { type EventStatus, type EventRecurrence, type EventSignupMode } from '@/lib/events';
 
 const VALID_STATUS: EventStatus[] = ['draft', 'published', 'closed', 'cancelled'];
 const VALID_RECURRENCE: EventRecurrence[] = ['none', 'daily', 'weekly', 'monthly'];
+const VALID_SIGNUP_MODE: EventSignupMode[] = ['first_come', 'curated'];
 
 async function loadOwnedEvent(eventId: string, profileId: string) {
   const { data, error } = await supabase
@@ -84,6 +85,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: 'recurrence_invalid' }, { status: 400 });
     }
     patch.recurrence = body.recurrence;
+  }
+  if (typeof body.signup_mode === 'string') {
+    if (!VALID_SIGNUP_MODE.includes(body.signup_mode as EventSignupMode)) {
+      return NextResponse.json({ error: 'signup_mode_invalid' }, { status: 400 });
+    }
+    patch.signup_mode = body.signup_mode;
+  }
+  if ('capacity' in body) {
+    if (body.capacity == null || body.capacity === '') {
+      patch.capacity = null;
+    } else {
+      const n = Number(body.capacity);
+      if (!Number.isInteger(n) || n < 1) {
+        return NextResponse.json({ error: 'capacity_invalid' }, { status: 400 });
+      }
+      patch.capacity = n;
+    }
   }
 
   const { data, error } = await supabase

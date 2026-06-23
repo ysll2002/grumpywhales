@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
-import { generateEventReference, type EventStatus, type EventRecurrence } from '@/lib/events';
+import { generateEventReference, type EventStatus, type EventRecurrence, type EventSignupMode } from '@/lib/events';
 
 const VALID_STATUS: EventStatus[] = ['draft', 'published', 'closed', 'cancelled'];
 const VALID_RECURRENCE: EventRecurrence[] = ['none', 'daily', 'weekly', 'monthly'];
+const VALID_SIGNUP_MODE: EventSignupMode[] = ['first_come', 'curated'];
 
 export async function GET() {
   const session = await auth();
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
 
-  const { title, description, starts_at, ends_at, location, fee_amount, fee_currency, status, recurrence } = body;
+  const { title, description, starts_at, ends_at, location, fee_amount, fee_currency, status, recurrence, signup_mode, capacity } = body;
 
   if (typeof title !== 'string' || !title.trim()) {
     return NextResponse.json({ error: 'title_required' }, { status: 400 });
@@ -51,6 +52,15 @@ export async function POST(req: NextRequest) {
   }
   const finalStatus: EventStatus = VALID_STATUS.includes(status) ? status : 'draft';
   const finalRecurrence: EventRecurrence = VALID_RECURRENCE.includes(recurrence) ? recurrence : 'none';
+  const finalSignupMode: EventSignupMode = VALID_SIGNUP_MODE.includes(signup_mode) ? signup_mode : 'first_come';
+  let finalCapacity: number | null = null;
+  if (capacity != null && capacity !== '') {
+    const n = Number(capacity);
+    if (!Number.isInteger(n) || n < 1) {
+      return NextResponse.json({ error: 'capacity_invalid' }, { status: 400 });
+    }
+    finalCapacity = n;
+  }
 
   const { data, error } = await supabase
     .from('events')
@@ -65,6 +75,8 @@ export async function POST(req: NextRequest) {
       fee_currency:      (fee_currency || 'GBP').toString().toUpperCase().slice(0, 3),
       status:            finalStatus,
       recurrence:        finalRecurrence,
+      signup_mode:       finalSignupMode,
+      capacity:          finalCapacity,
       payment_reference: generateEventReference(),
     })
     .select('*')

@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { type EventRecurrence } from '@/lib/events';
+import { type EventRecurrence, type EventSignupMode } from '@/lib/events';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -41,6 +41,8 @@ export default function CreateEventForm() {
   const [feeAmount,   setFeeAmount]   = useState('0');
   const [feeCurrency, setFeeCurrency] = useState('GBP');
   const [recurrence,  setRecurrence]  = useState<EventRecurrence>('none');
+  const [signupMode,  setSignupMode]  = useState<EventSignupMode>('first_come');
+  const [capacity,    setCapacity]    = useState('');
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState('');
 
@@ -60,6 +62,8 @@ export default function CreateEventForm() {
         fee_amount: Number(feeAmount),
         fee_currency: feeCurrency,
         recurrence,
+        signup_mode: signupMode,
+        capacity:    capacity ? Number(capacity) : null,
         status: 'draft',
       }),
     });
@@ -163,6 +167,27 @@ export default function CreateEventForm() {
             <option value="USD">USD $</option>
           </select>
         </div>
+      </div>
+
+      <div>
+        <label style={labelStyle}>Sign-up</label>
+        <select value={signupMode} onChange={e => setSignupMode(e.target.value as EventSignupMode)} style={inputStyle}>
+          <option value="first_come">First-come, first-served</option>
+          <option value="curated">I&apos;ll pick the roster</option>
+        </select>
+      </div>
+
+      <div>
+        <label style={labelStyle}>Capacity <span style={{ color: 'var(--color-muted)', fontWeight: 400 }}>(blank = unlimited)</span></label>
+        <input
+          type="number"
+          min="1"
+          step="1"
+          placeholder="No limit"
+          value={capacity}
+          onChange={e => setCapacity(e.target.value)}
+          style={inputStyle}
+        />
       </div>
 
       {error && (

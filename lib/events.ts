@@ -14,12 +14,18 @@ export function generateEventReference(): string {
 
 export type EventStatus = 'draft' | 'published' | 'closed' | 'cancelled';
 export type EventRecurrence = 'none' | 'daily' | 'weekly' | 'monthly';
+export type EventSignupMode = 'first_come' | 'curated';
 
 export const RECURRENCE_LABELS: Record<EventRecurrence, string> = {
   none:    'One-off',
   daily:   'Daily',
   weekly:  'Weekly',
   monthly: 'Monthly',
+};
+
+export const SIGNUP_MODE_LABELS: Record<EventSignupMode, string> = {
+  first_come: 'First-come, first-served',
+  curated:    'Admin picks the roster',
 };
 
 export type Event = {
@@ -34,6 +40,8 @@ export type Event = {
   fee_currency:       string;
   status:             EventStatus;
   recurrence:         EventRecurrence;
+  signup_mode:        EventSignupMode;
+  capacity:           number | null;
   payment_reference:  string | null;
   created_at:         string;
   updated_at:         string;

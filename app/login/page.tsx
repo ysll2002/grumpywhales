@@ -2,9 +2,18 @@
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 
-export default function Login() {
+function sanitiseRedirect(value: string | null): string {
+  // Only allow same-origin paths to avoid open-redirect abuse.
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/dashboard';
+  return value;
+}
+
+function LoginInner() {
+  const params   = useSearchParams();
+  const redirect = sanitiseRedirect(params.get('redirect'));
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [error,    setError]    = useState('');
@@ -17,7 +26,7 @@ export default function Login() {
     const res = await signIn('credentials', { email, password, redirect: false });
     setBusy(false);
     if (res?.error) setError('Invalid email or password');
-    else window.location.href = '/dashboard';
+    else window.location.href = redirect;
   }
 
   return (
@@ -31,7 +40,7 @@ export default function Login() {
         <h1 className="text-2xl font-semibold mb-6">Log in</h1>
 
         <button
-          onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+          onClick={() => signIn('google', { callbackUrl: redirect })}
           className="w-full py-2.5 rounded-xl font-medium text-sm mb-4"
           style={{ backgroundColor: '#FFFFFF', color: 'var(--color-dark)', border: '1px solid var(--color-border)' }}
         >
@@ -58,5 +67,13 @@ export default function Login() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={null}>
+      <LoginInner />
+    </Suspense>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { type Event, type EventStatus, type EventRecurrence } from '@/lib/events';
+import { type Event, type EventStatus, type EventRecurrence, type EventSignupMode } from '@/lib/events';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -39,6 +39,8 @@ export default function EditEventForm({ event }: { event: Event }) {
   const [feeCurrency, setFeeCurrency] = useState(event.fee_currency);
   const [status,      setStatus]      = useState<EventStatus>(event.status);
   const [recurrence,  setRecurrence]  = useState<EventRecurrence>(event.recurrence);
+  const [signupMode,  setSignupMode]  = useState<EventSignupMode>(event.signup_mode);
+  const [capacity,    setCapacity]    = useState(event.capacity != null ? String(event.capacity) : '');
   const [saving,      setSaving]      = useState(false);
   const [deleting,    setDeleting]    = useState(false);
   const [error,       setError]       = useState('');
@@ -59,6 +61,8 @@ export default function EditEventForm({ event }: { event: Event }) {
         fee_amount: Number(feeAmount),
         fee_currency: feeCurrency,
         recurrence,
+        signup_mode: signupMode,
+        capacity:    capacity ? Number(capacity) : null,
         status,
       }),
     });
@@ -133,6 +137,19 @@ export default function EditEventForm({ event }: { event: Event }) {
           <option value="weekly">Weekly — same day each week</option>
           <option value="monthly">Monthly — same day each month</option>
         </select>
+      </div>
+
+      <div>
+        <label style={labelStyle}>Sign-up</label>
+        <select value={signupMode} onChange={e => setSignupMode(e.target.value as EventSignupMode)} style={inputStyle}>
+          <option value="first_come">First-come, first-served</option>
+          <option value="curated">I&apos;ll pick the roster</option>
+        </select>
+      </div>
+
+      <div>
+        <label style={labelStyle}>Capacity <span style={{ color: 'var(--color-muted)', fontWeight: 400 }}>(blank = unlimited)</span></label>
+        <input type="number" min="1" step="1" placeholder="No limit" value={capacity} onChange={e => setCapacity(e.target.value)} style={inputStyle} />
       </div>
 
       <div>
