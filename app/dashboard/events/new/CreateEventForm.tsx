@@ -68,7 +68,7 @@ export default function CreateEventForm() {
         recurrence,
         signup_mode: signupMode,
         capacity:    capacity ? Number(capacity) : null,
-        status: 'draft',
+        status: 'published',
       }),
     });
 
