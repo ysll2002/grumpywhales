@@ -88,7 +88,7 @@ export default async function RosterPage({ params }: { params: Promise<{ id: str
         ← Back to event
       </Link>
 
-      <h1 className="text-3xl font-semibold mb-1" style={{ fontFamily: 'var(--font-display)' }}>Roster</h1>
+      <h1 className="text-3xl font-semibold mb-1" style={{ fontFamily: 'var(--font-display)' }}>Attendees</h1>
       <p className="text-sm mb-8" style={{ color: 'var(--color-muted)' }}>
         <strong>{ev.title}</strong> · {formatEventDateTime(ev.starts_at)}
       </p>

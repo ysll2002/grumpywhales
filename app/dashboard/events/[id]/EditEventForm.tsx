@@ -157,7 +157,7 @@ export default function EditEventForm({ event }: { event: Event }) {
         <label style={labelStyle}>Sign-up</label>
         <select value={signupMode} onChange={e => setSignupMode(e.target.value as EventSignupMode)} style={inputStyle}>
           <option value="first_come">First-come, first-served</option>
-          <option value="curated">I&apos;ll pick the roster</option>
+          <option value="curated">I&apos;ll pick the list</option>
         </select>
       </div>
 

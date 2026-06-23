@@ -74,8 +74,8 @@ export default function SignupButton({
 
   if (isActive) {
     const label =
-      currentStatus === 'accepted'   ? "You're on the roster" :
-      currentStatus === 'pending'    ? "You're in — awaiting the final roster" :
+      currentStatus === 'accepted'   ? "You're in" :
+      currentStatus === 'pending'    ? "Signed up — awaiting the final list" :
       currentStatus === 'waitlisted' ? "You're on the waitlist" :
       currentStatus;
 
@@ -87,7 +87,7 @@ export default function SignupButton({
         </div>
         {currentStatus === 'pending' && signupMode === 'curated' && (
           <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-            The final roster will be announced {announceDay ? `on ${announceDay}` : 'before the event starts'}.
+            The final list will be announced {announceDay ? `on ${announceDay}` : 'before the event starts'}.
             You&apos;ll get an email and a notification here once the host publishes it.
           </p>
         )}

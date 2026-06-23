@@ -93,7 +93,7 @@ export default async function PublicEventPage({ params }: { params: Promise<{ re
             <p className="text-sm font-medium">{SIGNUP_MODE_LABELS[event.signup_mode]}</p>
             {event.capacity != null && (
               <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>
-                {acceptedCount ?? 0} / {event.capacity} on the roster{isFull ? ' · full' : ''}
+                {acceptedCount ?? 0} / {event.capacity} signed up{isFull ? ' · full' : ''}
               </p>
             )}
           </Tile>

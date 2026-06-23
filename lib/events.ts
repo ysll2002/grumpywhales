@@ -25,7 +25,7 @@ export const RECURRENCE_LABELS: Record<EventRecurrence, string> = {
 
 export const SIGNUP_MODE_LABELS: Record<EventSignupMode, string> = {
   first_come: 'First-come, first-served',
-  curated:    'Admin picks the roster',
+  curated:    'Host picks the list',
 };
 
 export type Event = {

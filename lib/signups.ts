@@ -21,7 +21,7 @@ export type EventSignup = {
 };
 
 export const SIGNUP_STATUS_LABELS: Record<SignupStatus, string> = {
-  accepted:   'On the roster',
+  accepted:   "You're in",
   pending:    'Awaiting host',
   waitlisted: 'Waitlist',
   declined:   'Not selected',

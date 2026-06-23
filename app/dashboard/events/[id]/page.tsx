@@ -62,7 +62,7 @@ export default async function EventAdminPage({ params }: { params: Promise<{ id:
           {ev.fee_amount > 0 && <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>per attendee</p>}
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--color-muted)' }}>Roster</p>
+          <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--color-muted)' }}>Attendees</p>
           <p className="text-sm font-medium">
             {acceptedCount ?? 0}{ev.capacity != null ? ` / ${ev.capacity}` : ''} accepted
           </p>
@@ -94,7 +94,7 @@ export default async function EventAdminPage({ params }: { params: Promise<{ id:
         style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', textDecoration: 'none', color: 'var(--color-fg)' }}
       >
         <div>
-          <p className="text-sm font-semibold" style={{ fontFamily: 'var(--font-display)' }}>Roster</p>
+          <p className="text-sm font-semibold" style={{ fontFamily: 'var(--font-display)' }}>Attendees</p>
           <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
             See who&apos;s signed up, change status, reorder, mark attendance.
           </p>
