@@ -3,21 +3,47 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
+import { stripe } from '@/lib/stripe';
 import { formatEventDateTime, formatMoney, RECURRENCE_LABELS, SIGNUP_MODE_LABELS, type Event } from '@/lib/events';
 import type { SignupStatus, PaymentStatus } from '@/lib/signups';
 import SignupButton from './SignupButton';
 
 export const dynamic = 'force-dynamic';
 
+// On the post-checkout redirect Stripe may take a few seconds to deliver the
+// webhook. Bypass that latency by calling Stripe directly here to confirm the
+// session is paid, and update the DB so this render shows the new state.
+async function confirmPaymentFromSession(opts: {
+  sessionId: string;
+  signupId:  string;
+}): Promise<boolean> {
+  try {
+    const sess = await stripe().checkout.sessions.retrieve(opts.sessionId);
+    if (sess.payment_status !== 'paid') return false;
+    if (sess.client_reference_id !== opts.signupId) return false;   // mismatched — ignore
+    const paymentIntentId = typeof sess.payment_intent === 'string' ? sess.payment_intent : null;
+    await supabase.from('event_signups').update({
+      payment_status:           'paid',
+      paid_at:                  new Date().toISOString(),
+      stripe_payment_intent_id: paymentIntentId,
+      updated_at:               new Date().toISOString(),
+    }).eq('id', opts.signupId).eq('payment_status', 'unpaid');   // only flip from unpaid
+    return true;
+  } catch (err) {
+    console.error('[event page] stripe session check failed', err);
+    return false;
+  }
+}
+
 export default async function PublicEventPage({
   params,
   searchParams,
 }: {
   params: Promise<{ ref: string }>;
-  searchParams: Promise<{ paid?: string }>;
+  searchParams: Promise<{ paid?: string; session_id?: string }>;
 }) {
   const { ref } = await params;
-  const { paid } = await searchParams;
+  const { paid, session_id } = await searchParams;
   const session = await auth();
 
   const { data: eventRow } = await supabase
@@ -42,13 +68,20 @@ export default async function PublicEventPage({
   if (session?.user?.profileId) {
     const { data: mine } = await supabase
       .from('event_signups')
-      .select('status, payment_status')
+      .select('id, status, payment_status')
       .eq('event_id', event.id)
       .eq('profile_id', session.user.profileId)
       .maybeSingle();
     if (mine) {
       currentStatus = mine.status as SignupStatus;
       paymentStatus = mine.payment_status as PaymentStatus;
+
+      // Returned from Stripe Checkout — verify the session directly so we
+      // don't have to wait for the asynchronous webhook to update the DB.
+      if (paid === '1' && session_id && paymentStatus === 'unpaid') {
+        const confirmed = await confirmPaymentFromSession({ sessionId: session_id, signupId: mine.id });
+        if (confirmed) paymentStatus = 'paid';
+      }
     }
   }
 
