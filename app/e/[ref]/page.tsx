@@ -9,8 +9,15 @@ import SignupButton from './SignupButton';
 
 export const dynamic = 'force-dynamic';
 
-export default async function PublicEventPage({ params }: { params: Promise<{ ref: string }> }) {
+export default async function PublicEventPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ ref: string }>;
+  searchParams: Promise<{ paid?: string }>;
+}) {
   const { ref } = await params;
+  const { paid } = await searchParams;
   const session = await auth();
 
   const { data: eventRow } = await supabase
@@ -99,10 +106,28 @@ export default async function PublicEventPage({ params }: { params: Promise<{ re
           </Tile>
         </div>
 
+        {paid === '1' && paymentStatus === 'paid' && (
+          <div className="rounded-2xl px-5 py-3 mb-4" style={{ backgroundColor: '#D1FAE5', border: '1px solid #A7F3D0', color: 'var(--color-accent-dk)' }}>
+            ✓ <strong>Payment received.</strong> You&apos;re all set — see you at the event.
+          </div>
+        )}
+        {paid === '1' && paymentStatus !== 'paid' && (
+          <div className="rounded-2xl px-5 py-3 mb-4" style={{ backgroundColor: '#FFF4B8', border: '1px solid #FCD34D', color: '#7C5800' }}>
+            Stripe is processing your payment. This page will refresh in a moment.
+          </div>
+        )}
+        {paid === '0' && (
+          <div className="rounded-2xl px-5 py-3 mb-4" style={{ backgroundColor: '#FEE2E2', border: '1px solid var(--color-red)', color: 'var(--color-red)' }}>
+            Payment cancelled. You can try again any time.
+          </div>
+        )}
+
         <div className="p-6 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
           <SignupButton
             eventId={event.id}
             eventStartsAt={event.starts_at}
+            feeLabel={Number(event.fee_amount) > 0 ? formatMoney(event.fee_amount, event.fee_currency) : 'Free'}
+            hasFee={Number(event.fee_amount) > 0}
             signedIn={!!session}
             loginHref={loginRef}
             currentStatus={currentStatus}

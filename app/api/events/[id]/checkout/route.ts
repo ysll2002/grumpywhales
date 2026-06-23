@@ -1,0 +1,69 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
+import { stripe } from '@/lib/stripe';
+
+// POST /api/events/:id/checkout — create a Stripe Checkout Session for the
+// current user's signup on this event. Returns { url } to redirect to.
+export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  if (!session?.user?.profileId) return NextResponse.json({ error: 'unauthorised' }, { status: 401 });
+  const { id: eventId } = await params;
+  const profileId = session.user.profileId;
+
+  // Load event + signup in parallel
+  const [eventRes, signupRes] = await Promise.all([
+    supabase.from('events')
+      .select('id, title, fee_amount, fee_currency, payment_reference, status')
+      .eq('id', eventId).maybeSingle(),
+    supabase.from('event_signups')
+      .select('id, status, payment_status, stripe_session_id')
+      .eq('event_id', eventId).eq('profile_id', profileId).maybeSingle(),
+  ]);
+
+  const event  = eventRes.data;
+  const signup = signupRes.data;
+  if (!event)  return NextResponse.json({ error: 'event_not_found' }, { status: 404 });
+  if (event.status !== 'published') {
+    return NextResponse.json({ error: 'event_not_open' }, { status: 409 });
+  }
+  if (!signup) return NextResponse.json({ error: 'not_signed_up' }, { status: 409 });
+  if (signup.payment_status === 'paid') {
+    return NextResponse.json({ error: 'already_paid' }, { status: 409 });
+  }
+  if (Number(event.fee_amount) <= 0) {
+    return NextResponse.json({ error: 'event_is_free' }, { status: 409 });
+  }
+
+  // Build URLs. Stripe replaces {CHECKOUT_SESSION_ID} in the success URL.
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://grumpywhales.com';
+  const successUrl = `${baseUrl}/e/${event.payment_reference}?paid=1&session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl  = `${baseUrl}/e/${event.payment_reference}?paid=0`;
+
+  const checkoutSession = await stripe().checkout.sessions.create({
+    mode: 'payment',
+    line_items: [{
+      price_data: {
+        currency:     event.fee_currency.toLowerCase(),
+        unit_amount:  Math.round(Number(event.fee_amount) * 100),
+        product_data: { name: event.title },
+      },
+      quantity: 1,
+    }],
+    success_url: successUrl,
+    cancel_url:  cancelUrl,
+    client_reference_id: signup.id,                 // our signup row id
+    metadata: { event_id: event.id, signup_id: signup.id, profile_id: profileId },
+    payment_intent_data: {
+      metadata: { event_id: event.id, signup_id: signup.id, profile_id: profileId },
+    },
+  });
+
+  // Stash the session id so we can correlate on the redirect even before the
+  // webhook fires.
+  await supabase.from('event_signups')
+    .update({ stripe_session_id: checkoutSession.id, updated_at: new Date().toISOString() })
+    .eq('id', signup.id);
+
+  return NextResponse.json({ url: checkoutSession.url });
+}

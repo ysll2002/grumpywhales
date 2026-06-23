@@ -7,6 +7,8 @@ import type { SignupStatus, PaymentStatus } from '@/lib/signups';
 type Props = {
   eventId:        string;
   eventStartsAt:  string;            // ISO timestamp
+  feeLabel:       string;            // e.g. "£10"
+  hasFee:         boolean;
   signedIn:       boolean;
   loginHref:      string;
   currentStatus:  SignupStatus | null;
@@ -24,11 +26,27 @@ function announcementDateLabel(eventIso: string): string | null {
 }
 
 export default function SignupButton({
-  eventId, eventStartsAt, signedIn, loginHref, currentStatus, paymentStatus, signupMode, isFull,
+  eventId, eventStartsAt, feeLabel, hasFee, signedIn, loginHref, currentStatus, paymentStatus, signupMode, isFull,
 }: Props) {
   const router = useRouter();
-  const [busy,  setBusy]  = useState(false);
-  const [error, setError] = useState('');
+  const [busy,    setBusy]    = useState(false);
+  const [payBusy, setPayBusy] = useState(false);
+  const [error,   setError]   = useState('');
+
+  async function payNow() {
+    setPayBusy(true);
+    setError('');
+    const res = await fetch(`/api/events/${eventId}/checkout`, { method: 'POST' });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setError(j.detail ?? j.error ?? 'payment_failed');
+      setPayBusy(false);
+      return;
+    }
+    const { url } = await res.json() as { url: string };
+    if (url) window.location.href = url;
+    else { setPayBusy(false); setError('no_checkout_url'); }
+  }
 
   if (!signedIn) {
     return (
@@ -96,10 +114,24 @@ export default function SignupButton({
             You&apos;ll be moved up automatically if someone drops out.
           </p>
         )}
-        {paymentStatus === 'unpaid' && (
-          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-            Payment will be enabled here once Stripe is wired up.
-          </p>
+        {paymentStatus === 'unpaid' && hasFee && (
+          <div className="flex flex-col gap-2 items-start">
+            <button
+              onClick={payNow}
+              disabled={payBusy}
+              className="px-6 py-2.5 rounded-full font-medium text-sm disabled:opacity-50"
+              style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', border: 'none', cursor: payBusy ? 'wait' : 'pointer' }}
+            >
+              {payBusy ? 'Redirecting to checkout…' : `Pay ${feeLabel} now`}
+            </button>
+            <p className="text-xs" style={{ color: 'var(--color-muted)' }}>Secure card payment via Stripe.</p>
+          </div>
+        )}
+        {paymentStatus === 'paid' && (
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium"
+            style={{ backgroundColor: '#D1FAE5', color: 'var(--color-accent-dk)' }}>
+            ✓ Paid {feeLabel}
+          </div>
         )}
         <button
           onClick={cancel}
