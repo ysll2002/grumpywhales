@@ -94,11 +94,8 @@ export default async function EventsListPage({ searchParams }: { searchParams: P
                       </span>
                     )}
                   </div>
-                  <p className="text-sm mb-1" style={{ color: 'var(--color-muted)' }}>
+                  <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
                     {formatEventDateTime(ev.starts_at)}{ev.location ? ` · ${ev.location}` : ''}
-                  </p>
-                  <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
-                    Ref: <code style={{ color: 'var(--color-fg)' }}>{ev.payment_reference}</code>
                   </p>
                 </div>
                 <div className="text-right flex-shrink-0">
