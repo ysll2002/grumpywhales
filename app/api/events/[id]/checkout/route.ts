@@ -40,24 +40,31 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   const successUrl = `${baseUrl}/e/${event.payment_reference}?paid=1&session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl  = `${baseUrl}/e/${event.payment_reference}?paid=0`;
 
-  const checkoutSession = await stripe().checkout.sessions.create({
-    mode: 'payment',
-    line_items: [{
-      price_data: {
-        currency:     event.fee_currency.toLowerCase(),
-        unit_amount:  Math.round(Number(event.fee_amount) * 100),
-        product_data: { name: event.title },
-      },
-      quantity: 1,
-    }],
-    success_url: successUrl,
-    cancel_url:  cancelUrl,
-    client_reference_id: signup.id,                 // our signup row id
-    metadata: { event_id: event.id, signup_id: signup.id, profile_id: profileId },
-    payment_intent_data: {
+  let checkoutSession;
+  try {
+    checkoutSession = await stripe().checkout.sessions.create({
+      mode: 'payment',
+      line_items: [{
+        price_data: {
+          currency:     event.fee_currency.toLowerCase(),
+          unit_amount:  Math.round(Number(event.fee_amount) * 100),
+          product_data: { name: event.title },
+        },
+        quantity: 1,
+      }],
+      success_url: successUrl,
+      cancel_url:  cancelUrl,
+      client_reference_id: signup.id,                 // our signup row id
       metadata: { event_id: event.id, signup_id: signup.id, profile_id: profileId },
-    },
-  });
+      payment_intent_data: {
+        metadata: { event_id: event.id, signup_id: signup.id, profile_id: profileId },
+      },
+    });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : 'unknown';
+    console.error('[checkout POST] stripe error', detail);
+    return NextResponse.json({ error: 'stripe_error', detail }, { status: 500 });
+  }
 
   // Stash the session id so we can correlate on the redirect even before the
   // webhook fires.
