@@ -6,6 +6,7 @@ import type { SignupStatus, PaymentStatus } from '@/lib/signups';
 
 type Props = {
   eventId:        string;
+  eventStartsAt:  string;            // ISO timestamp
   signedIn:       boolean;
   loginHref:      string;
   currentStatus:  SignupStatus | null;
@@ -14,8 +15,16 @@ type Props = {
   isFull:         boolean;
 };
 
+// Roster is announced the day before the event. Returns e.g. "Thursday 25 June".
+function announcementDateLabel(eventIso: string): string | null {
+  const start = new Date(eventIso);
+  const announce = new Date(start.getTime() - 24 * 60 * 60 * 1000);
+  if (announce.getTime() <= Date.now()) return null;  // event is in <24h, no future date to announce
+  return announce.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
 export default function SignupButton({
-  eventId, signedIn, loginHref, currentStatus, paymentStatus, signupMode, isFull,
+  eventId, eventStartsAt, signedIn, loginHref, currentStatus, paymentStatus, signupMode, isFull,
 }: Props) {
   const router = useRouter();
   const [busy,  setBusy]  = useState(false);
@@ -61,11 +70,12 @@ export default function SignupButton({
   }
 
   const isActive = currentStatus && currentStatus !== 'cancelled' && currentStatus !== 'declined';
+  const announceDay = announcementDateLabel(eventStartsAt);
 
   if (isActive) {
     const label =
       currentStatus === 'accepted'   ? "You're on the roster" :
-      currentStatus === 'pending'    ? "Awaiting the host's decision" :
+      currentStatus === 'pending'    ? "You're in — awaiting the final roster" :
       currentStatus === 'waitlisted' ? "You're on the waitlist" :
       currentStatus;
 
@@ -75,6 +85,17 @@ export default function SignupButton({
           style={{ backgroundColor: '#D1FAE5', color: 'var(--color-accent-dk)' }}>
           ✓ {label}
         </div>
+        {currentStatus === 'pending' && signupMode === 'curated' && (
+          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
+            The final roster will be announced {announceDay ? `on ${announceDay}` : 'before the event starts'}.
+            You&apos;ll get an email and a notification here once the host publishes it.
+          </p>
+        )}
+        {currentStatus === 'waitlisted' && (
+          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
+            You&apos;ll be moved up automatically if someone drops out.
+          </p>
+        )}
         {paymentStatus === 'unpaid' && (
           <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
             Payment will be enabled here once Stripe is wired up.

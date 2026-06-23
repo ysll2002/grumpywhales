@@ -102,6 +102,7 @@ export default async function PublicEventPage({ params }: { params: Promise<{ re
         <div className="p-6 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
           <SignupButton
             eventId={event.id}
+            eventStartsAt={event.starts_at}
             signedIn={!!session}
             loginHref={loginRef}
             currentStatus={currentStatus}
