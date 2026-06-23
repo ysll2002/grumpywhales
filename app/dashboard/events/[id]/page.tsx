@@ -87,6 +87,21 @@ export default async function EventAdminPage({ params }: { params: Promise<{ id:
         </div>
       )}
 
+      {/* ── Roster shortcut ── */}
+      <Link
+        href={`/dashboard/events/${ev.id}/roster`}
+        className="block p-4 rounded-2xl mb-8 flex items-center justify-between"
+        style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', textDecoration: 'none', color: 'var(--color-fg)' }}
+      >
+        <div>
+          <p className="text-sm font-semibold" style={{ fontFamily: 'var(--font-display)' }}>Roster</p>
+          <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
+            See who&apos;s signed up, change status, reorder, mark attendance.
+          </p>
+        </div>
+        <span className="text-sm" style={{ color: 'var(--color-accent)' }}>Open →</span>
+      </Link>
+
       {/* ── Settings ── */}
       <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>Settings</h2>
       <EditEventForm event={ev} />
