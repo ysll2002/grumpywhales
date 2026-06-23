@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { type EventRecurrence, type EventSignupMode } from '@/lib/events';
+import LocationAutocomplete from '@/components/LocationAutocomplete';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -38,6 +39,8 @@ export default function CreateEventForm() {
   const [startsAt,    setStartsAt]    = useState(toLocalDatetimeInput(oneHourLater));
   const [endsAt,      setEndsAt]      = useState(toLocalDatetimeInput(twoHoursLater));
   const [location,    setLocation]    = useState('');
+  const [lat,         setLat]         = useState<number | null>(null);
+  const [lng,         setLng]         = useState<number | null>(null);
   const [feeAmount,   setFeeAmount]   = useState('0');
   const [feeCurrency, setFeeCurrency] = useState('GBP');
   const [recurrence,  setRecurrence]  = useState<EventRecurrence>('none');
@@ -59,6 +62,7 @@ export default function CreateEventForm() {
         starts_at: new Date(startsAt).toISOString(),
         ends_at:   endsAt ? new Date(endsAt).toISOString() : null,
         location,
+        lat, lng,
         fee_amount: Number(feeAmount),
         fee_currency: feeCurrency,
         recurrence,
@@ -137,13 +141,17 @@ export default function CreateEventForm() {
 
       <div>
         <label style={labelStyle}>Location</label>
-        <input
-          type="text"
-          placeholder="Venue, address, or Zoom link"
+        <LocationAutocomplete
           value={location}
-          onChange={e => setLocation(e.target.value)}
-          style={inputStyle}
+          onChange={({ value, lat, lng }) => { setLocation(value); setLat(lat); setLng(lng); }}
+          inputStyle={inputStyle}
+          placeholder="Start typing a UK address, place or postcode…"
         />
+        {lat != null && lng != null && (
+          <p style={{ fontSize: 11, color: 'var(--color-muted)', marginTop: 6 }}>
+            📍 {lat.toFixed(4)}, {lng.toFixed(4)} — will appear on the event map.
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-[2fr_1fr] gap-3">

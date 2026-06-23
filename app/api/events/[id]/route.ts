@@ -103,6 +103,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       patch.capacity = n;
     }
   }
+  if ('lat' in body) {
+    const v = parseCoord(body.lat, -90, 90);
+    if (v === 'invalid') return NextResponse.json({ error: 'lat_invalid' }, { status: 400 });
+    patch.lat = v;
+  }
+  if ('lng' in body) {
+    const v = parseCoord(body.lng, -180, 180);
+    if (v === 'invalid') return NextResponse.json({ error: 'lng_invalid' }, { status: 400 });
+    patch.lng = v;
+  }
 
   const { data, error } = await supabase
     .from('events')
@@ -118,6 +128,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   return NextResponse.json({ event: data });
+}
+
+function parseCoord(value: unknown, min: number, max: number): number | null | 'invalid' {
+  if (value == null || value === '') return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < min || n > max) return 'invalid';
+  return n;
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

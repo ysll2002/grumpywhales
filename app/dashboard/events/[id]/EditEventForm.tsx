@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { type Event, type EventStatus, type EventRecurrence, type EventSignupMode } from '@/lib/events';
+import LocationAutocomplete from '@/components/LocationAutocomplete';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -35,6 +36,8 @@ export default function EditEventForm({ event }: { event: Event }) {
   const [startsAt,    setStartsAt]    = useState(toLocalDatetimeInput(event.starts_at));
   const [endsAt,      setEndsAt]      = useState(toLocalDatetimeInput(event.ends_at));
   const [location,    setLocation]    = useState(event.location ?? '');
+  const [lat,         setLat]         = useState<number | null>(event.lat ?? null);
+  const [lng,         setLng]         = useState<number | null>(event.lng ?? null);
   const [feeAmount,   setFeeAmount]   = useState(String(event.fee_amount));
   const [feeCurrency, setFeeCurrency] = useState(event.fee_currency);
   const [status,      setStatus]      = useState<EventStatus>(event.status);
@@ -58,6 +61,7 @@ export default function EditEventForm({ event }: { event: Event }) {
         starts_at: new Date(startsAt).toISOString(),
         ends_at:   endsAt ? new Date(endsAt).toISOString() : null,
         location,
+        lat, lng,
         fee_amount: Number(feeAmount),
         fee_currency: feeCurrency,
         recurrence,
@@ -111,7 +115,17 @@ export default function EditEventForm({ event }: { event: Event }) {
 
       <div>
         <label style={labelStyle}>Location</label>
-        <input type="text" value={location} onChange={e => setLocation(e.target.value)} style={inputStyle} />
+        <LocationAutocomplete
+          value={location}
+          onChange={({ value, lat, lng }) => { setLocation(value); setLat(lat); setLng(lng); }}
+          inputStyle={inputStyle}
+          placeholder="Start typing a UK address, place or postcode…"
+        />
+        {lat != null && lng != null && (
+          <p style={{ fontSize: 11, color: 'var(--color-muted)', marginTop: 6 }}>
+            📍 {lat.toFixed(4)}, {lng.toFixed(4)}
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-[2fr_1fr] gap-3">

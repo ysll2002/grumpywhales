@@ -42,6 +42,8 @@ export type Event = {
   recurrence:         EventRecurrence;
   signup_mode:        EventSignupMode;
   capacity:           number | null;
+  lat:                number | null;
+  lng:                number | null;
   payment_reference:  string | null;
   created_at:         string;
   updated_at:         string;

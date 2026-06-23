@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
 
-  const { title, description, starts_at, ends_at, location, fee_amount, fee_currency, status, recurrence, signup_mode, capacity } = body;
+  const { title, description, starts_at, ends_at, location, lat, lng, fee_amount, fee_currency, status, recurrence, signup_mode, capacity } = body;
 
   if (typeof title !== 'string' || !title.trim()) {
     return NextResponse.json({ error: 'title_required' }, { status: 400 });
@@ -61,6 +61,11 @@ export async function POST(req: NextRequest) {
     }
     finalCapacity = n;
   }
+  const finalLat = parseCoord(lat, -90,  90);
+  const finalLng = parseCoord(lng, -180, 180);
+  if (finalLat === 'invalid' || finalLng === 'invalid') {
+    return NextResponse.json({ error: 'coords_invalid' }, { status: 400 });
+  }
 
   const { data, error } = await supabase
     .from('events')
@@ -77,6 +82,8 @@ export async function POST(req: NextRequest) {
       recurrence:        finalRecurrence,
       signup_mode:       finalSignupMode,
       capacity:          finalCapacity,
+      lat:               finalLat,
+      lng:               finalLng,
       payment_reference: generateEventReference(),
     })
     .select('*')
@@ -88,4 +95,12 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ event: data }, { status: 201 });
+}
+
+// Returns the numeric value, null (when blank/null), or 'invalid' on bad input.
+function parseCoord(value: unknown, min: number, max: number): number | null | 'invalid' {
+  if (value == null || value === '') return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < min || n > max) return 'invalid';
+  return n;
 }
