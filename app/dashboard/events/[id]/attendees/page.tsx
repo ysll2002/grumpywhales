@@ -98,6 +98,7 @@ export default async function AttendeesPage({ params }: { params: Promise<{ id: 
         occurrenceDate={occurrenceDate}
         eventStarted={eventStarted}
         capacity={ev.capacity}
+        publishedAt={ev.attendees_published_at}
         initial={initial}
       />
     </div>

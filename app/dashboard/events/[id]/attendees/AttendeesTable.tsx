@@ -21,9 +21,10 @@ export type AttendeeRow = {
 
 type Props = {
   eventId:        string;
-  occurrenceDate: string;     // YYYY-MM-DD
+  occurrenceDate: string;       // YYYY-MM-DD
   eventStarted:   boolean;
   capacity:       number | null;
+  publishedAt:    string | null;
   initial:        AttendeeRow[];
 };
 
@@ -49,12 +50,42 @@ const PAY_TONE: Record<PaymentStatus, { bg: string; fg: string }> = {
   paid:   { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
 };
 
-export default function AttendeesTable({ eventId, occurrenceDate, eventStarted, capacity, initial }: Props) {
-  const [rows,  setRows]  = useState<AttendeeRow[]>(initial);
-  const [busy,  setBusy]  = useState(false);
-  const [error, setError] = useState('');
+export default function AttendeesTable({ eventId, occurrenceDate, eventStarted, capacity, publishedAt, initial }: Props) {
+  const [rows,       setRows]       = useState<AttendeeRow[]>(initial);
+  const [busy,       setBusy]       = useState(false);
+  const [error,      setError]      = useState('');
+  const [publishing, setPublishing] = useState(false);
+  const [publishMsg, setPublishMsg] = useState('');
+  const [lastPub,    setLastPub]    = useState<string | null>(publishedAt);
 
   const acceptedCount = useMemo(() => rows.filter(r => r.status === 'accepted').length, [rows]);
+  const pendingCount  = useMemo(() => rows.filter(r => r.status === 'pending').length, [rows]);
+
+  async function publish() {
+    const breakdown = [
+      `${acceptedCount} accepted`,
+      `${rows.filter(r => r.status === 'waitlisted').length} waitlisted`,
+      `${rows.filter(r => r.status === 'declined').length} declined`,
+      pendingCount ? `${pendingCount} still pending (will also be emailed)` : '',
+    ].filter(Boolean).join(', ');
+    const ok = confirm(
+      `Send a notification email to every non-cancelled attendee?\n\n${breakdown}\n\nThey'll see their final status and the event details.`
+    );
+    if (!ok) return;
+
+    setPublishing(true);
+    setPublishMsg('');
+    const res = await fetch(`/api/events/${eventId}/publish`, { method: 'POST' });
+    setPublishing(false);
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setPublishMsg(`Publish failed: ${j.detail ?? j.error ?? 'unknown'}`);
+      return;
+    }
+    const j = await res.json() as { sent: number; skipped: number; failed: number };
+    setLastPub(new Date().toISOString());
+    setPublishMsg(`Sent ${j.sent} email${j.sent === 1 ? '' : 's'}${j.failed ? ` · ${j.failed} failed` : ''}${j.skipped ? ` · ${j.skipped} skipped (no email)` : ''}.`);
+  }
 
   async function changeStatus(signupId: string, status: SignupStatus) {
     setRows(rs => rs.map(r => r.signup_id === signupId ? { ...r, status } : r));
@@ -107,12 +138,36 @@ export default function AttendeesTable({ eventId, occurrenceDate, eventStarted, 
 
   return (
     <>
-      <div className="flex gap-6 mb-6 text-sm">
-        <Stat label="Signed up">{rows.length}</Stat>
-        <Stat label="Accepted">{acceptedCount}{capacity != null ? ` / ${capacity}` : ''}</Stat>
-        <Stat label="Pending">{rows.filter(r => r.status === 'pending').length}</Stat>
+      <div className="flex items-end justify-between flex-wrap gap-4 mb-6">
+        <div className="flex gap-6 text-sm">
+          <Stat label="Signed up">{rows.length}</Stat>
+          <Stat label="Accepted">{acceptedCount}{capacity != null ? ` / ${capacity}` : ''}</Stat>
+          <Stat label="Pending">{pendingCount}</Stat>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            type="button"
+            onClick={publish}
+            disabled={publishing || rows.length === 0}
+            className="px-5 py-2.5 rounded-full text-sm font-medium disabled:opacity-50"
+            style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', border: 'none', cursor: publishing ? 'wait' : 'pointer' }}
+          >
+            {publishing ? 'Publishing…' : lastPub ? 'Re-publish & email' : 'Publish & email everyone'}
+          </button>
+          {lastPub && (
+            <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
+              Last sent {new Date(lastPub).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+            </p>
+          )}
+        </div>
       </div>
 
+      {publishMsg && (
+        <p className="text-sm py-2 px-3 rounded-lg mb-4"
+          style={{ backgroundColor: '#D1FAE5', color: 'var(--color-accent-dk)' }}>
+          {publishMsg}
+        </p>
+      )}
       {error && (
         <p className="text-sm py-2 px-3 rounded-lg mb-4" style={{ backgroundColor: '#FEE2E2', color: 'var(--color-red)' }}>{error}</p>
       )}
