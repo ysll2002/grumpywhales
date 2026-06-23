@@ -15,7 +15,7 @@ type Props = {
   isFull:         boolean;
 };
 
-// Roster is announced the day before the event. Returns e.g. "Thursday 25 June".
+// The final attendee list is announced the day before the event. Returns e.g. "Thursday 25 June".
 function announcementDateLabel(eventIso: string): string | null {
   const start = new Date(eventIso);
   const announce = new Date(start.getTime() - 24 * 60 * 60 * 1000);

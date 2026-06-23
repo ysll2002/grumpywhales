@@ -20,7 +20,7 @@ export default async function EventAdminPage({ params }: { params: Promise<{ id:
   if (!event) notFound();
   const ev: Event = event;
 
-  // Roster counts — P3 will surface the full attendee list; for now just totals
+  // Attendee counts shown in the snapshot card.
   const { count: acceptedCount } = await supabase
     .from('event_signups').select('id', { head: true, count: 'exact' })
     .eq('event_id', ev.id).eq('status', 'accepted');
@@ -87,9 +87,9 @@ export default async function EventAdminPage({ params }: { params: Promise<{ id:
         </div>
       )}
 
-      {/* ── Roster shortcut ── */}
+      {/* ── Attendees shortcut ── */}
       <Link
-        href={`/dashboard/events/${ev.id}/roster`}
+        href={`/dashboard/events/${ev.id}/attendees`}
         className="block p-4 rounded-2xl mb-8 flex items-center justify-between"
         style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', textDecoration: 'none', color: 'var(--color-fg)' }}
       >

@@ -1,5 +1,5 @@
 export type SignupStatus =
-  | 'accepted'    // confirmed on the roster
+  | 'accepted'    // confirmed on the attendee list
   | 'pending'     // curated mode — waiting for admin
   | 'waitlisted'  // first_come past capacity (populated in P3)
   | 'declined'    // curated, admin rejected

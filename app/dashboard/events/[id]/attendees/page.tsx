@@ -4,7 +4,7 @@ import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { isEventAdmin } from '@/lib/event-admin';
 import { formatEventDateTime, type Event } from '@/lib/events';
-import RosterTable, { type RosterRow } from './RosterTable';
+import AttendeesTable, { type AttendeeRow } from './AttendeesTable';
 
 const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
 
@@ -24,7 +24,7 @@ type AttendanceQueryRow = {
   attended:        boolean;
 };
 
-export default async function RosterPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AttendeesPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.profileId) redirect('/login');
   const { id: eventId } = await params;
@@ -54,7 +54,7 @@ export default async function RosterPage({ params }: { params: Promise<{ id: str
   const attendance = (attendanceRows ?? []) as unknown as AttendanceQueryRow[];
 
   const cutoff = Date.now() - NINETY_DAYS_MS;
-  const initial: RosterRow[] = signups.map(s => {
+  const initial: AttendeeRow[] = signups.map(s => {
     const mine  = attendance.filter(a => a.profile_id === s.profile_id);
     const past3 = mine.filter(a => new Date(a.occurrence_date).getTime() >= cutoff);
     const todayMark = mine.find(a => a.occurrence_date === occurrenceDate);
@@ -63,8 +63,8 @@ export default async function RosterPage({ params }: { params: Promise<{ id: str
       profile_id:       s.profile_id,
       name:             s.profiles?.name ?? null,
       email:            s.profiles?.email ?? null,
-      status:           s.status as RosterRow['status'],
-      payment_status:   s.payment_status as RosterRow['payment_status'],
+      status:           s.status as AttendeeRow['status'],
+      payment_status:   s.payment_status as AttendeeRow['payment_status'],
       signed_up_at:     s.signed_up_at,
       sort_order:       s.sort_order,
       attended_today:   todayMark?.attended ?? null,
@@ -93,7 +93,7 @@ export default async function RosterPage({ params }: { params: Promise<{ id: str
         <strong>{ev.title}</strong> · {formatEventDateTime(ev.starts_at)}
       </p>
 
-      <RosterTable
+      <AttendeesTable
         eventId={ev.id}
         occurrenceDate={occurrenceDate}
         eventStarted={eventStarted}

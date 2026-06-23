@@ -21,7 +21,7 @@ export default async function PublicEventPage({ params }: { params: Promise<{ re
   if (!eventRow || eventRow.status !== 'published') notFound();
   const event: Event = eventRow;
 
-  // Host name (for the by-line) and current accepted-roster count (for capacity display)
+  // Host name (for the by-line) and current accepted-attendee count (for capacity display)
   const [hostRes, countRes] = await Promise.all([
     supabase.from('profiles').select('name').eq('id', event.admin_id).maybeSingle(),
     supabase.from('event_signups').select('id', { head: true, count: 'exact' }).eq('event_id', event.id).eq('status', 'accepted'),

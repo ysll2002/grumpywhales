@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { SignupStatus, PaymentStatus } from '@/lib/signups';
 
-export type RosterRow = {
+export type AttendeeRow = {
   signup_id:         string;
   profile_id:        string;
   name:              string | null;
@@ -24,7 +24,7 @@ type Props = {
   occurrenceDate: string;     // YYYY-MM-DD
   eventStarted:   boolean;
   capacity:       number | null;
-  initial:        RosterRow[];
+  initial:        AttendeeRow[];
 };
 
 const STATUS_OPTIONS: { value: SignupStatus; label: string }[] = [
@@ -49,8 +49,8 @@ const PAY_TONE: Record<PaymentStatus, { bg: string; fg: string }> = {
   paid:   { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
 };
 
-export default function RosterTable({ eventId, occurrenceDate, eventStarted, capacity, initial }: Props) {
-  const [rows,  setRows]  = useState<RosterRow[]>(initial);
+export default function AttendeesTable({ eventId, occurrenceDate, eventStarted, capacity, initial }: Props) {
+  const [rows,  setRows]  = useState<AttendeeRow[]>(initial);
   const [busy,  setBusy]  = useState(false);
   const [error, setError] = useState('');
 
@@ -79,7 +79,7 @@ export default function RosterTable({ eventId, occurrenceDate, eventStarted, cap
     setBusy(true);
     setError('');
     const order = next.map(r => r.signup_id);
-    const res = await fetch(`/api/events/${eventId}/roster`, {
+    const res = await fetch(`/api/events/${eventId}/attendees`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ order }),

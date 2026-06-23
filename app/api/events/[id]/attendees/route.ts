@@ -80,7 +80,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return new Date(a.signed_up_at).getTime() - new Date(b.signed_up_at).getTime();
   });
 
-  return NextResponse.json({ roster: rows, occurrence_date: occurrenceDateForThis });
+  return NextResponse.json({ attendees: rows, occurrence_date: occurrenceDateForThis });
 }
 
 // PATCH: bulk reorder. Body: { order: [signup_id, signup_id, ...] }
@@ -99,7 +99,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   // Update each one's sort_order = its index. Could be one big SQL, but a
-  // handful of small updates is plenty for typical roster sizes.
+  // handful of small updates is plenty for typical attendee-list sizes.
   await Promise.all(body.order.map((signupId, idx) =>
     supabase.from('event_signups').update({ sort_order: idx, updated_at: new Date().toISOString() })
       .eq('id', signupId).eq('event_id', eventId)
