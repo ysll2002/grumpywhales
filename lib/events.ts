@@ -66,3 +66,37 @@ export function formatEventDateTime(iso: string): string {
     hour: '2-digit', minute: '2-digit',
   });
 }
+
+// Returns the next `count` occurrence ISO timestamps (UTC) for an event,
+// starting from `from` (default: now). For one-off events the list is
+// either [starts_at] (if it's still upcoming) or []. Recurring events use
+// the event's start time of day for every occurrence.
+export function computeNextOccurrences(
+  event: Pick<Event, 'starts_at' | 'recurrence'>,
+  count: number,
+  from: Date = new Date(),
+): string[] {
+  const start = new Date(event.starts_at);
+  if (event.recurrence === 'none') {
+    return start.getTime() >= from.getTime() ? [start.toISOString()] : [];
+  }
+  const out: string[] = [];
+  const cursor = new Date(start);
+  // Cap iterations so a far-past starts_at with a daily cadence can't loop
+  // forever. 5y of daily ≈ 1825 — comfortable upper bound.
+  for (let i = 0; i < 2000 && out.length < count; i++) {
+    if (cursor.getTime() >= from.getTime()) out.push(cursor.toISOString());
+    switch (event.recurrence) {
+      case 'daily':   cursor.setUTCDate(cursor.getUTCDate() + 1); break;
+      case 'weekly':  cursor.setUTCDate(cursor.getUTCDate() + 7); break;
+      case 'monthly': cursor.setUTCMonth(cursor.getUTCMonth() + 1); break;
+    }
+  }
+  return out;
+}
+
+// Date component (YYYY-MM-DD) of an ISO timestamp, treating it as UTC so the
+// 'occurrence_date' value lines up with what the DB column stores.
+export function occurrenceDate(iso: string): string {
+  return iso.slice(0, 10);
+}

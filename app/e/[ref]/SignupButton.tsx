@@ -5,28 +5,30 @@ import { useRouter } from 'next/navigation';
 import type { SignupStatus, PaymentStatus } from '@/lib/signups';
 
 type Props = {
-  eventId:        string;
-  eventStartsAt:  string;            // ISO timestamp
-  feeLabel:       string;            // e.g. "£10"
-  hasFee:         boolean;
-  signedIn:       boolean;
-  loginHref:      string;
-  currentStatus:  SignupStatus | null;
-  paymentStatus:  PaymentStatus | null;
-  signupMode:     'first_come' | 'curated';
-  isFull:         boolean;
+  eventId:          string;
+  occurrenceDate:   string;          // YYYY-MM-DD — the specific session
+  occurrenceIso:    string;          // ISO timestamp for announcement-day calc
+  feeLabel:         string;
+  hasFee:           boolean;
+  signedIn:         boolean;
+  loginHref:        string;
+  currentStatus:    SignupStatus | null;
+  paymentStatus:    PaymentStatus | null;
+  signupMode:       'first_come' | 'curated';
+  isFull:           boolean;
 };
 
-// The final attendee list is announced the day before the event. Returns e.g. "Thursday 25 June".
-function announcementDateLabel(eventIso: string): string | null {
-  const start = new Date(eventIso);
+// The final attendee list is announced the day before the session.
+function announcementDateLabel(occurrenceIso: string): string | null {
+  const start = new Date(occurrenceIso);
   const announce = new Date(start.getTime() - 24 * 60 * 60 * 1000);
-  if (announce.getTime() <= Date.now()) return null;  // event is in <24h, no future date to announce
+  if (announce.getTime() <= Date.now()) return null;
   return announce.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
 export default function SignupButton({
-  eventId, eventStartsAt, feeLabel, hasFee, signedIn, loginHref, currentStatus, paymentStatus, signupMode, isFull,
+  eventId, occurrenceDate, occurrenceIso, feeLabel, hasFee, signedIn, loginHref,
+  currentStatus, paymentStatus, signupMode, isFull,
 }: Props) {
   const router = useRouter();
   const [busy,    setBusy]    = useState(false);
@@ -36,7 +38,11 @@ export default function SignupButton({
   async function payNow() {
     setPayBusy(true);
     setError('');
-    const res = await fetch(`/api/events/${eventId}/checkout`, { method: 'POST' });
+    const res = await fetch(`/api/events/${eventId}/checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ occurrence_date: occurrenceDate }),
+    });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
       setError(j.detail ?? j.error ?? 'payment_failed');
@@ -52,7 +58,7 @@ export default function SignupButton({
     return (
       <a
         href={loginHref}
-        className="inline-block px-7 py-3 rounded-full font-medium text-base"
+        className="inline-block px-5 py-2 rounded-full font-medium text-sm"
         style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}
       >
         Sign in to join →
@@ -63,7 +69,11 @@ export default function SignupButton({
   async function signUp() {
     setBusy(true);
     setError('');
-    const res = await fetch(`/api/events/${eventId}/signup`, { method: 'POST' });
+    const res = await fetch(`/api/events/${eventId}/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ occurrence_date: occurrenceDate }),
+    });
     setBusy(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
@@ -74,10 +84,10 @@ export default function SignupButton({
   }
 
   async function cancel() {
-    if (!confirm('Cancel your sign-up for this event?')) return;
+    if (!confirm('Cancel your sign-up for this session?')) return;
     setBusy(true);
     setError('');
-    const res = await fetch(`/api/events/${eventId}/signup`, { method: 'DELETE' });
+    const res = await fetch(`/api/events/${eventId}/signup?occurrence_date=${occurrenceDate}`, { method: 'DELETE' });
     setBusy(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
@@ -88,7 +98,7 @@ export default function SignupButton({
   }
 
   const isActive = currentStatus && currentStatus !== 'cancelled' && currentStatus !== 'declined';
-  const announceDay = announcementDateLabel(eventStartsAt);
+  const announceDay = announcementDateLabel(occurrenceIso);
 
   if (isActive) {
     const label =
@@ -98,45 +108,41 @@ export default function SignupButton({
       currentStatus;
 
     return (
-      <div className="flex flex-col gap-3 items-start">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium"
-          style={{ backgroundColor: '#D1FAE5', color: 'var(--color-accent-dk)' }}>
-          ✓ {label}
+      <div className="flex flex-col gap-2 items-start">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
+            style={{ backgroundColor: '#D1FAE5', color: 'var(--color-accent-dk)' }}>
+            ✓ {label}
+          </span>
+          {paymentStatus === 'paid' && (
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
+              style={{ backgroundColor: '#D1FAE5', color: 'var(--color-accent-dk)' }}>
+              ✓ Paid {feeLabel}
+            </span>
+          )}
         </div>
         {currentStatus === 'pending' && signupMode === 'curated' && (
-          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-            The final list will be announced {announceDay ? `on ${announceDay}` : 'before the event starts'}.
-            You&apos;ll get an email and a notification here once the host publishes it.
+          <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
+            Final list announced {announceDay ? `on ${announceDay}` : 'before the session'}.
           </p>
         )}
         {currentStatus === 'waitlisted' && (
-          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-            You&apos;ll be moved up automatically if someone drops out.
-          </p>
+          <p className="text-xs" style={{ color: 'var(--color-muted)' }}>You&apos;ll be promoted if someone drops out.</p>
         )}
         {paymentStatus === 'unpaid' && hasFee && (
-          <div className="flex flex-col gap-2 items-start">
-            <button
-              onClick={payNow}
-              disabled={payBusy}
-              className="px-6 py-2.5 rounded-full font-medium text-sm disabled:opacity-50"
-              style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', border: 'none', cursor: payBusy ? 'wait' : 'pointer' }}
-            >
-              {payBusy ? 'Redirecting to checkout…' : `Pay ${feeLabel} now`}
-            </button>
-            <p className="text-xs" style={{ color: 'var(--color-muted)' }}>Secure card payment via Stripe.</p>
-          </div>
-        )}
-        {paymentStatus === 'paid' && (
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium"
-            style={{ backgroundColor: '#D1FAE5', color: 'var(--color-accent-dk)' }}>
-            ✓ Paid {feeLabel}
-          </div>
+          <button
+            onClick={payNow}
+            disabled={payBusy}
+            className="px-5 py-2 rounded-full font-medium text-sm disabled:opacity-50"
+            style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', border: 'none', cursor: payBusy ? 'wait' : 'pointer' }}
+          >
+            {payBusy ? 'Redirecting…' : `Pay ${feeLabel}`}
+          </button>
         )}
         <button
           onClick={cancel}
           disabled={busy}
-          className="text-sm disabled:opacity-50"
+          className="text-xs disabled:opacity-50"
           style={{ color: 'var(--color-red)', background: 'none', border: 'none', cursor: busy ? 'wait' : 'pointer' }}
         >
           {busy ? 'Cancelling…' : 'Cancel my sign-up'}
@@ -148,17 +154,14 @@ export default function SignupButton({
 
   if (isFull && signupMode === 'first_come') {
     return (
-      <div className="flex flex-col gap-3 items-start">
-        <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-          This event is full. Join the waitlist — you&apos;ll be moved up if someone drops out.
-        </p>
+      <div className="flex flex-col gap-2 items-start">
         <button
           onClick={signUp}
           disabled={busy}
-          className="px-7 py-3 rounded-full font-medium text-base disabled:opacity-50"
+          className="px-5 py-2 rounded-full font-medium text-sm disabled:opacity-50"
           style={{ backgroundColor: 'var(--color-yellow)', color: 'var(--color-dark)', border: 'none', cursor: busy ? 'wait' : 'pointer' }}
         >
-          {busy ? 'Joining…' : 'Join the waitlist'}
+          {busy ? 'Joining…' : 'Join waitlist'}
         </button>
         {error && <p className="text-xs" style={{ color: 'var(--color-red)' }}>{error}</p>}
       </div>
@@ -170,7 +173,7 @@ export default function SignupButton({
       <button
         onClick={signUp}
         disabled={busy}
-        className="px-7 py-3 rounded-full font-medium text-base disabled:opacity-50"
+        className="px-5 py-2 rounded-full font-medium text-sm disabled:opacity-50"
         style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', border: 'none', cursor: busy ? 'wait' : 'pointer' }}
       >
         {busy ? 'Signing up…' : signupMode === 'curated' ? 'Request to attend' : 'Sign me up'}

@@ -5,11 +5,12 @@ import { formatEventDateTime, formatMoney, type Event } from '@/lib/events';
 import { SIGNUP_STATUS_LABELS, PAYMENT_STATUS_LABELS, type SignupStatus, type PaymentStatus } from '@/lib/signups';
 
 type SignupRow = {
-  id:             string;
-  status:         SignupStatus;
-  payment_status: PaymentStatus;
-  signed_up_at:   string;
-  events:         Event | null;
+  id:              string;
+  occurrence_date: string;
+  status:          SignupStatus;
+  payment_status:  PaymentStatus;
+  signed_up_at:    string;
+  events:          Event | null;
 };
 
 const STATUS_BADGE: Record<SignupStatus, { bg: string; fg: string }> = {
@@ -26,36 +27,53 @@ const PAYMENT_BADGE: Record<PaymentStatus, { bg: string; fg: string }> = {
   paid:   { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
 };
 
+// Build the ISO timestamp for this specific occurrence by taking the time-of-day
+// from event.starts_at and applying the occurrence_date.
+function occurrenceIso(eventStartsAt: string, occurrenceDate: string): string {
+  const start = new Date(eventStartsAt);
+  const [y, m, d] = occurrenceDate.split('-').map(Number);
+  const out = new Date(start);
+  out.setUTCFullYear(y, m - 1, d);
+  return out.toISOString();
+}
+
 export default async function AttendingPage() {
   const session = await auth();
   const profileId = session!.user.profileId;
 
   const { data } = await supabase
     .from('event_signups')
-    .select('id, status, payment_status, signed_up_at, events(*)')
+    .select('id, occurrence_date, status, payment_status, signed_up_at, events(*)')
     .eq('profile_id', profileId)
     .neq('status', 'cancelled')
-    .order('signed_up_at', { ascending: false });
+    .order('occurrence_date', { ascending: true });
 
   const rows = (data ?? []) as unknown as SignupRow[];
   const now = Date.now();
-  const upcoming = rows.filter(r => r.events && new Date(r.events.starts_at).getTime() >= now);
-  const past     = rows.filter(r => r.events && new Date(r.events.starts_at).getTime() <  now);
+
+  // Build derived ISO for upcoming/past split and display
+  const enriched = rows
+    .filter(r => r.events)
+    .map(r => ({ row: r, iso: occurrenceIso(r.events!.starts_at, r.occurrence_date) }));
+
+  const upcoming = enriched.filter(r => new Date(r.iso).getTime() >= now);
+  const past     = enriched.filter(r => new Date(r.iso).getTime() <  now).reverse();   // newest past first
 
   return (
     <div className="p-8 max-w-4xl">
       <h1 className="text-3xl font-semibold mb-1" style={{ fontFamily: 'var(--font-display)' }}>Attending</h1>
       <p className="text-sm mb-10" style={{ color: 'var(--color-muted)' }}>
-        Events you&apos;ve signed up for, with payment status.
+        Sessions you&apos;ve signed up for, with payment status. Each session of a recurring event is listed separately.
       </p>
 
-      <Section title="Upcoming" rows={upcoming} empty="No upcoming events. Open an event link to sign up." />
-      <Section title="Past"     rows={past}     empty="No past events yet." />
+      <Section title="Upcoming" rows={upcoming} empty="No upcoming sessions. Open an event link to sign up." />
+      <Section title="Past"     rows={past}     empty="No past sessions yet." />
     </div>
   );
 }
 
-function Section({ title, rows, empty }: { title: string; rows: SignupRow[]; empty: string }) {
+function Section({ title, rows, empty }:
+  { title: string; rows: { row: SignupRow; iso: string }[]; empty: string }) {
   return (
     <section className="mb-10">
       <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>{title}</h2>
@@ -63,27 +81,27 @@ function Section({ title, rows, empty }: { title: string; rows: SignupRow[]; emp
         <p className="text-sm" style={{ color: 'var(--color-muted)' }}>{empty}</p>
       ) : (
         <div className="grid gap-3">
-          {rows.map(r => r.events && (
+          {rows.map(({ row, iso }) => row.events && (
             <Link
-              key={r.id}
-              href={`/e/${r.events.payment_reference}`}
+              key={row.id}
+              href={`/e/${row.events.payment_reference}`}
               className="p-5 rounded-2xl flex items-start justify-between gap-4"
               style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', textDecoration: 'none', color: 'var(--color-fg)' }}
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="text-base font-semibold truncate" style={{ fontFamily: 'var(--font-display)' }}>{r.events.title}</span>
-                  <Badge tone={STATUS_BADGE[r.status]}>{SIGNUP_STATUS_LABELS[r.status]}</Badge>
-                  {Number(r.events.fee_amount) > 0 && (
-                    <Badge tone={PAYMENT_BADGE[r.payment_status]}>{PAYMENT_STATUS_LABELS[r.payment_status]}</Badge>
+                  <span className="text-base font-semibold truncate" style={{ fontFamily: 'var(--font-display)' }}>{row.events.title}</span>
+                  <Badge tone={STATUS_BADGE[row.status]}>{SIGNUP_STATUS_LABELS[row.status]}</Badge>
+                  {Number(row.events.fee_amount) > 0 && (
+                    <Badge tone={PAYMENT_BADGE[row.payment_status]}>{PAYMENT_STATUS_LABELS[row.payment_status]}</Badge>
                   )}
                 </div>
                 <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-                  {formatEventDateTime(r.events.starts_at)}{r.events.location ? ` · ${r.events.location}` : ''}
+                  {formatEventDateTime(iso)}{row.events.location ? ` · ${row.events.location}` : ''}
                 </p>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="text-xl font-semibold">{Number(r.events.fee_amount) > 0 ? formatMoney(r.events.fee_amount, r.events.fee_currency) : 'Free'}</p>
+                <p className="text-xl font-semibold">{Number(row.events.fee_amount) > 0 ? formatMoney(row.events.fee_amount, row.events.fee_currency) : 'Free'}</p>
               </div>
             </Link>
           ))}

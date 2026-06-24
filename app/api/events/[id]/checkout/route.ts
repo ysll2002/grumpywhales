@@ -4,21 +4,27 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { stripe } from '@/lib/stripe';
 
 // POST /api/events/:id/checkout — create a Stripe Checkout Session for the
-// current user's signup on this event. Returns { url } to redirect to.
-export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// current user's signup on a specific occurrence. Body: { occurrence_date }.
+// Returns { url } to redirect to.
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.profileId) return NextResponse.json({ error: 'unauthorised' }, { status: 401 });
   const { id: eventId } = await params;
   const profileId = session.user.profileId;
 
-  // Load event + signup in parallel
+  const body = await req.json().catch(() => ({})) as { occurrence_date?: string };
+  if (!body.occurrence_date || !/^\d{4}-\d{2}-\d{2}$/.test(body.occurrence_date)) {
+    return NextResponse.json({ error: 'missing_occurrence_date' }, { status: 400 });
+  }
+
+  // Load event + signup for this occurrence in parallel
   const [eventRes, signupRes] = await Promise.all([
     supabase.from('events')
       .select('id, title, fee_amount, fee_currency, payment_reference, status')
       .eq('id', eventId).maybeSingle(),
     supabase.from('event_signups')
       .select('id, status, payment_status, stripe_session_id')
-      .eq('event_id', eventId).eq('profile_id', profileId).maybeSingle(),
+      .eq('event_id', eventId).eq('profile_id', profileId).eq('occurrence_date', body.occurrence_date).maybeSingle(),
   ]);
 
   const event  = eventRes.data;
@@ -37,8 +43,8 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
 
   // Build URLs. Stripe replaces {CHECKOUT_SESSION_ID} in the success URL.
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://grumpywhales.com';
-  const successUrl = `${baseUrl}/e/${event.payment_reference}?paid=1&session_id={CHECKOUT_SESSION_ID}`;
-  const cancelUrl  = `${baseUrl}/e/${event.payment_reference}?paid=0`;
+  const successUrl = `${baseUrl}/e/${event.payment_reference}?paid=1&occurrence=${body.occurrence_date}&session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl  = `${baseUrl}/e/${event.payment_reference}?paid=0&occurrence=${body.occurrence_date}`;
 
   let checkoutSession;
   try {

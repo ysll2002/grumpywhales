@@ -4,30 +4,38 @@ import Image from 'next/image';
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { stripe } from '@/lib/stripe';
-import { formatEventDateTime, formatMoney, RECURRENCE_LABELS, SIGNUP_MODE_LABELS, type Event } from '@/lib/events';
+import {
+  formatEventDateTime, formatMoney,
+  RECURRENCE_LABELS, SIGNUP_MODE_LABELS,
+  computeNextOccurrences, occurrenceDate,
+  type Event,
+} from '@/lib/events';
 import type { SignupStatus, PaymentStatus } from '@/lib/signups';
 import SignupButton from './SignupButton';
 
 export const dynamic = 'force-dynamic';
 
-// On the post-checkout redirect Stripe may take a few seconds to deliver the
-// webhook. Bypass that latency by calling Stripe directly here to confirm the
-// session is paid, and update the DB so this render shows the new state.
-async function confirmPaymentFromSession(opts: {
-  sessionId: string;
-  signupId:  string;
-}): Promise<boolean> {
+type MySignup = {
+  id:              string;
+  occurrence_date: string;
+  status:          SignupStatus;
+  payment_status:  PaymentStatus;
+};
+
+// Confirm Stripe payment directly from the session id, so the post-checkout
+// redirect doesn't have to wait for the asynchronous webhook.
+async function confirmPaymentFromSession(opts: { sessionId: string; signupId: string }): Promise<boolean> {
   try {
     const sess = await stripe().checkout.sessions.retrieve(opts.sessionId);
     if (sess.payment_status !== 'paid') return false;
-    if (sess.client_reference_id !== opts.signupId) return false;   // mismatched — ignore
+    if (sess.client_reference_id !== opts.signupId) return false;
     const paymentIntentId = typeof sess.payment_intent === 'string' ? sess.payment_intent : null;
     await supabase.from('event_signups').update({
       payment_status:           'paid',
       paid_at:                  new Date().toISOString(),
       stripe_payment_intent_id: paymentIntentId,
       updated_at:               new Date().toISOString(),
-    }).eq('id', opts.signupId).eq('payment_status', 'unpaid');   // only flip from unpaid
+    }).eq('id', opts.signupId).eq('payment_status', 'unpaid');
     return true;
   } catch (err) {
     console.error('[event page] stripe session check failed', err);
@@ -39,54 +47,58 @@ export default async function PublicEventPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ ref: string }>;
-  searchParams: Promise<{ paid?: string; session_id?: string }>;
+  params:       Promise<{ ref: string }>;
+  searchParams: Promise<{ paid?: string; session_id?: string; occurrence?: string }>;
 }) {
   const { ref } = await params;
-  const { paid, session_id } = await searchParams;
+  const { paid, session_id, occurrence } = await searchParams;
   const session = await auth();
 
   const { data: eventRow } = await supabase
-    .from('events')
-    .select('*')
-    .eq('payment_reference', ref)
-    .maybeSingle();
+    .from('events').select('*').eq('payment_reference', ref).maybeSingle();
   if (!eventRow || eventRow.status !== 'published') notFound();
   const event: Event = eventRow;
 
-  // Host name (for the by-line) and current accepted-attendee count (for capacity display)
-  const [hostRes, countRes] = await Promise.all([
+  // Upcoming occurrences (next 8 for recurring, single for one-off)
+  const occurrencesIso = computeNextOccurrences(event, event.recurrence === 'none' ? 1 : 8);
+  const occurrenceDates = occurrencesIso.map(occurrenceDate);
+
+  // Host name + accepted-attendee counts per occurrence + current user's signups
+  const [hostRes, acceptedRowsRes, mySignupsRes] = await Promise.all([
     supabase.from('profiles').select('name').eq('id', event.admin_id).maybeSingle(),
-    supabase.from('event_signups').select('id', { head: true, count: 'exact' }).eq('event_id', event.id).eq('status', 'accepted'),
+    occurrenceDates.length
+      ? supabase.from('event_signups').select('occurrence_date')
+          .eq('event_id', event.id).eq('status', 'accepted').in('occurrence_date', occurrenceDates)
+      : Promise.resolve({ data: [] as { occurrence_date: string }[] }),
+    session?.user?.profileId && occurrenceDates.length
+      ? supabase.from('event_signups')
+          .select('id, occurrence_date, status, payment_status')
+          .eq('event_id', event.id).eq('profile_id', session.user.profileId)
+          .in('occurrence_date', occurrenceDates)
+      : Promise.resolve({ data: [] as MySignup[] }),
   ]);
+
   const host: { name: string | null } | null = hostRes.data;
-  const acceptedCount = countRes.count;
+  const countByDate = new Map<string, number>();
+  for (const r of (acceptedRowsRes.data ?? []) as { occurrence_date: string }[]) {
+    countByDate.set(r.occurrence_date, (countByDate.get(r.occurrence_date) ?? 0) + 1);
+  }
+  const myByDate = new Map<string, MySignup>();
+  for (const r of (mySignupsRes.data ?? []) as MySignup[]) myByDate.set(r.occurrence_date, r);
 
-  // Current user's signup (if any)
-  let currentStatus:  SignupStatus  | null = null;
-  let paymentStatus:  PaymentStatus | null = null;
-  if (session?.user?.profileId) {
-    const { data: mine } = await supabase
-      .from('event_signups')
-      .select('id, status, payment_status')
-      .eq('event_id', event.id)
-      .eq('profile_id', session.user.profileId)
-      .maybeSingle();
-    if (mine) {
-      currentStatus = mine.status as SignupStatus;
-      paymentStatus = mine.payment_status as PaymentStatus;
-
-      // Returned from Stripe Checkout — verify the session directly so we
-      // don't have to wait for the asynchronous webhook to update the DB.
-      if (paid === '1' && session_id && paymentStatus === 'unpaid') {
-        const confirmed = await confirmPaymentFromSession({ sessionId: session_id, signupId: mine.id });
-        if (confirmed) paymentStatus = 'paid';
-      }
+  // Post-checkout: confirm with Stripe synchronously for the right signup.
+  if (paid === '1' && session_id && occurrence) {
+    const mine = myByDate.get(occurrence);
+    if (mine && mine.payment_status === 'unpaid') {
+      const ok = await confirmPaymentFromSession({ sessionId: session_id, signupId: mine.id });
+      if (ok) myByDate.set(occurrence, { ...mine, payment_status: 'paid' });
     }
   }
 
-  const isFull   = event.capacity != null && (acceptedCount ?? 0) >= event.capacity;
+  const hasFee   = Number(event.fee_amount) > 0;
+  const feeLabel = hasFee ? formatMoney(event.fee_amount, event.fee_currency) : 'Free';
   const loginRef = `/login?redirect=${encodeURIComponent(`/e/${ref}`)}`;
+  const isRecurring = event.recurrence !== 'none';
 
   return (
     <main className="min-h-screen">
@@ -117,58 +129,83 @@ export default async function PublicEventPage({
         )}
 
         <div className="grid sm:grid-cols-2 gap-4 mb-8">
-          <Tile label="When">
-            <p className="text-sm font-medium">{formatEventDateTime(event.starts_at)}</p>
-            {event.ends_at && <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>until {formatEventDateTime(event.ends_at)}</p>}
-            {event.recurrence !== 'none' && <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>↻ Repeats {RECURRENCE_LABELS[event.recurrence].toLowerCase()}</p>}
-          </Tile>
           <Tile label="Where">
             <p className="text-sm font-medium whitespace-pre-wrap">{event.location ?? 'TBA'}</p>
           </Tile>
           <Tile label="Fee">
-            <p className="text-sm font-medium">{Number(event.fee_amount) > 0 ? formatMoney(event.fee_amount, event.fee_currency) : 'Free'}</p>
-            {Number(event.fee_amount) > 0 && <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>per attendee</p>}
+            <p className="text-sm font-medium">{feeLabel}</p>
+            {hasFee && <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>per session</p>}
           </Tile>
           <Tile label="Sign-up">
             <p className="text-sm font-medium">{SIGNUP_MODE_LABELS[event.signup_mode]}</p>
             {event.capacity != null && (
               <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>
-                {acceptedCount ?? 0} / {event.capacity} signed up{isFull ? ' · full' : ''}
+                Capacity: {event.capacity} per session
               </p>
             )}
           </Tile>
+          {isRecurring && (
+            <Tile label="Cadence">
+              <p className="text-sm font-medium">{RECURRENCE_LABELS[event.recurrence]}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>
+                Starts {formatEventDateTime(event.starts_at)}
+              </p>
+            </Tile>
+          )}
         </div>
 
-        {paid === '1' && paymentStatus === 'paid' && (
-          <div className="rounded-2xl px-5 py-3 mb-4" style={{ backgroundColor: '#D1FAE5', border: '1px solid #A7F3D0', color: 'var(--color-accent-dk)' }}>
-            ✓ <strong>Payment received.</strong> You&apos;re all set — see you at the event.
-          </div>
-        )}
-        {paid === '1' && paymentStatus !== 'paid' && (
-          <div className="rounded-2xl px-5 py-3 mb-4" style={{ backgroundColor: '#FFF4B8', border: '1px solid #FCD34D', color: '#7C5800' }}>
-            Stripe is processing your payment. This page will refresh in a moment.
-          </div>
-        )}
-        {paid === '0' && (
-          <div className="rounded-2xl px-5 py-3 mb-4" style={{ backgroundColor: '#FEE2E2', border: '1px solid var(--color-red)', color: 'var(--color-red)' }}>
-            Payment cancelled. You can try again any time.
-          </div>
-        )}
+        <h2 className="text-lg font-semibold mb-3" style={{ fontFamily: 'var(--font-display)' }}>
+          {isRecurring ? 'Upcoming sessions' : 'When'}
+        </h2>
 
-        <div className="p-6 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
-          <SignupButton
-            eventId={event.id}
-            eventStartsAt={event.starts_at}
-            feeLabel={Number(event.fee_amount) > 0 ? formatMoney(event.fee_amount, event.fee_currency) : 'Free'}
-            hasFee={Number(event.fee_amount) > 0}
-            signedIn={!!session}
-            loginHref={loginRef}
-            currentStatus={currentStatus}
-            paymentStatus={paymentStatus}
-            signupMode={event.signup_mode}
-            isFull={isFull}
-          />
-        </div>
+        {occurrencesIso.length === 0 ? (
+          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>This event has already happened.</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {occurrencesIso.map(iso => {
+              const date = occurrenceDate(iso);
+              const accepted = countByDate.get(date) ?? 0;
+              const isFull = event.capacity != null && accepted >= event.capacity;
+              const mine = myByDate.get(date) ?? null;
+              const justPaid = paid === '1' && occurrence === date && mine?.payment_status === 'paid';
+              const justCancelled = paid === '0' && occurrence === date;
+              return (
+                <div key={date} className="p-5 rounded-2xl flex items-start justify-between gap-4 flex-wrap"
+                  style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
+                  <div className="min-w-0">
+                    <p className="text-base font-semibold" style={{ fontFamily: 'var(--font-display)' }}>
+                      {formatEventDateTime(iso)}
+                    </p>
+                    {event.capacity != null && (
+                      <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>
+                        {accepted} / {event.capacity} on the list{isFull ? ' · full' : ''}
+                      </p>
+                    )}
+                    {justPaid && (
+                      <p className="text-xs mt-1" style={{ color: 'var(--color-accent-dk)' }}>✓ Payment received — see you there.</p>
+                    )}
+                    {justCancelled && (
+                      <p className="text-xs mt-1" style={{ color: 'var(--color-red)' }}>Payment cancelled. You can try again.</p>
+                    )}
+                  </div>
+                  <SignupButton
+                    eventId={event.id}
+                    occurrenceDate={date}
+                    occurrenceIso={iso}
+                    feeLabel={feeLabel}
+                    hasFee={hasFee}
+                    signedIn={!!session}
+                    loginHref={loginRef}
+                    currentStatus={mine?.status ?? null}
+                    paymentStatus={mine?.payment_status ?? null}
+                    signupMode={event.signup_mode}
+                    isFull={isFull}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         <p className="text-xs mt-8" style={{ color: 'var(--color-muted)' }}>
           Reference: <code>{event.payment_reference}</code>

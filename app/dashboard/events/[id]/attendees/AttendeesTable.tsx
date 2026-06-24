@@ -75,7 +75,11 @@ export default function AttendeesTable({ eventId, occurrenceDate, eventStarted, 
 
     setPublishing(true);
     setPublishMsg('');
-    const res = await fetch(`/api/events/${eventId}/publish`, { method: 'POST' });
+    const res = await fetch(`/api/events/${eventId}/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ occurrence_date: occurrenceDate }),
+    });
     setPublishing(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
