@@ -2,69 +2,207 @@ import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import Link from 'next/link';
 import { formatEventDateTime, formatMoney, type Event } from '@/lib/events';
+import { SIGNUP_STATUS_LABELS, PAYMENT_STATUS_LABELS, type SignupStatus, type PaymentStatus } from '@/lib/signups';
 
-export default async function DashboardHome() {
+const STATUS_BADGE: Record<SignupStatus, { bg: string; fg: string }> = {
+  accepted:   { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
+  pending:    { bg: '#FFF4B8', fg: '#7C5800' },
+  waitlisted: { bg: '#FFF4B8', fg: '#7C5800' },
+  declined:   { bg: '#FEE2E2', fg: 'var(--color-red)' },
+  cancelled:  { bg: '#E5E7EB', fg: '#6B7280' },
+};
+
+const PAYMENT_BADGE: Record<PaymentStatus, { bg: string; fg: string }> = {
+  free:   { bg: '#E5E7EB', fg: '#374151' },
+  unpaid: { bg: '#FEE2E2', fg: 'var(--color-red)' },
+  paid:   { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
+};
+
+const HOST_STATUS_BADGE: Record<string, { bg: string; fg: string; label: string }> = {
+  published: { bg: '#D1FAE5', fg: 'var(--color-accent-dk)', label: 'Live' },
+  closed:    { bg: '#E5E7EB', fg: '#374151',                label: 'Closed' },
+  cancelled: { bg: '#FEE2E2', fg: 'var(--color-red)',       label: 'Cancelled' },
+};
+
+type AttendingRow = {
+  id:              string;
+  occurrence_date: string;
+  status:          SignupStatus;
+  payment_status:  PaymentStatus;
+  events:          Event | null;
+};
+
+// Same helper used elsewhere: combine event.starts_at time-of-day with occurrence_date.
+function occurrenceIso(eventStartsAt: string, occDate: string): string {
+  const start = new Date(eventStartsAt);
+  const [y, m, d] = occDate.split('-').map(Number);
+  const out = new Date(start);
+  out.setUTCFullYear(y, m - 1, d);
+  return out.toISOString();
+}
+
+export default async function DashboardHome({ searchParams }: { searchParams: Promise<{ created?: string }> }) {
   const session = await auth();
   const profileId = session!.user.profileId;
+  const { created } = await searchParams;
+  const now = Date.now();
 
-  const { data: eventsData } = await supabase
-    .from('events')
-    .select('*')
-    .eq('admin_id', profileId)
-    .order('starts_at', { ascending: true });
+  const [hostingRes, attendingRes] = await Promise.all([
+    supabase.from('events').select('*').eq('admin_id', profileId).order('starts_at', { ascending: true }),
+    supabase
+      .from('event_signups')
+      .select('id, occurrence_date, status, payment_status, events(*)')
+      .eq('profile_id', profileId)
+      .neq('status', 'cancelled')
+      .order('occurrence_date', { ascending: true }),
+  ]);
 
-  const events: Event[] = eventsData ?? [];
-  const now = new Date();
-  const upcoming = events.filter(e => new Date(e.starts_at) >= now && e.status !== 'cancelled');
-  const published = events.filter(e => e.status === 'published').length;
-  const totalFee = upcoming.reduce((sum, e) => sum + Number(e.fee_amount || 0), 0);
-  const nextEvent = upcoming[0];
+  const hostingEvents = (hostingRes.data ?? []) as Event[];
+  const justCreated   = created ? hostingEvents.find(e => e.id === created) : null;
+
+  const upcomingHosting = hostingEvents.filter(e => new Date(e.starts_at).getTime() >= now);
+
+  const attending = ((attendingRes.data ?? []) as unknown as AttendingRow[])
+    .filter(r => r.events)
+    .map(r => ({
+      row: r,
+      iso: occurrenceIso(r.events!.starts_at, r.occurrence_date),
+      cancelled: (r.events!.cancelled_dates ?? []).includes(r.occurrence_date),
+    }));
+  const upcomingAttending = attending.filter(r => new Date(r.iso).getTime() >= now);
 
   return (
-    <div className="p-8 max-w-4xl">
-      <h1 className="text-3xl font-semibold mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-        Welcome back, {session?.user.name ?? 'there'}.
-      </h1>
-      <p style={{ color: 'var(--color-muted)' }} className="mb-10">
-        {events.length === 0
-          ? 'Create your first event to start collecting fees.'
-          : 'Your event hub.'}
-      </p>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        {[
-          { label: 'Total events', value: String(events.length) },
-          { label: 'Published',    value: String(published) },
-          { label: 'Upcoming fee (per attendee)', value: totalFee > 0 ? formatMoney(totalFee, 'GBP') : '£0' },
-        ].map(m => (
-          <div key={m.label} className="p-5 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
-            <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--color-muted)' }}>{m.label}</p>
-            <p className="text-2xl font-semibold mt-1">{m.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {nextEvent && (
-        <Link
-          href={`/dashboard/events/${nextEvent.id}`}
-          className="block p-5 rounded-2xl mb-6"
-          style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', textDecoration: 'none', color: 'var(--color-fg)' }}
-        >
-          <p className="text-xs uppercase tracking-wider mb-2" style={{ color: 'var(--color-muted)' }}>Next up</p>
-          <p className="text-lg font-semibold mb-1" style={{ fontFamily: 'var(--font-display)' }}>{nextEvent.title}</p>
-          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-            {formatEventDateTime(nextEvent.starts_at)}{nextEvent.location ? ` · ${nextEvent.location}` : ''}
+    <div className="p-8 max-w-5xl">
+      {justCreated && (
+        <div className="rounded-2xl px-5 py-4 mb-6"
+          style={{ backgroundColor: '#D1FAE5', border: '1px solid #A7F3D0' }}>
+          <p className="text-sm mb-2" style={{ color: 'var(--color-accent-dk)' }}>
+            ✓ <strong>&ldquo;{justCreated.title}&rdquo; is live.</strong> Share this link to start collecting sign-ups:
           </p>
-        </Link>
+          <div className="flex items-center gap-3 flex-wrap">
+            <code className="text-sm font-medium" style={{ color: 'var(--color-accent-dk)' }}>
+              grumpywhales.com/e/{justCreated.payment_reference}
+            </code>
+            <Link href={`/e/${justCreated.payment_reference}`} target="_blank" className="text-sm font-medium" style={{ color: 'var(--color-accent-dk)' }}>
+              Open ↗
+            </Link>
+            <Link href={`/dashboard/events/${justCreated.id}`} className="text-sm font-medium" style={{ color: 'var(--color-accent-dk)' }}>
+              Edit settings →
+            </Link>
+          </div>
+        </div>
       )}
 
-      <Link
-        href="/dashboard/events/new"
-        className="inline-block px-6 py-3 rounded-full text-sm font-medium"
-        style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}
-      >
-        + Create event
-      </Link>
+      <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-semibold mb-1" style={{ fontFamily: 'var(--font-display)' }}>My events</h1>
+          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
+            Everything you&apos;re hosting and attending in one place.
+          </p>
+        </div>
+        <Link
+          href="/dashboard/events/new"
+          className="px-5 py-2.5 rounded-full text-sm font-medium"
+          style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}
+        >
+          + New event
+        </Link>
+      </div>
+
+      {/* HOSTING */}
+      <section className="mb-12">
+        <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>Hosting</h2>
+        {hostingEvents.length === 0 ? (
+          <div className="p-10 rounded-2xl text-center" style={{ backgroundColor: 'var(--color-card)', border: '1px dashed var(--color-border)' }}>
+            <p className="text-base mb-2" style={{ fontFamily: 'var(--font-display)' }}>No events yet</p>
+            <p className="text-sm mb-5" style={{ color: 'var(--color-muted)' }}>Create your first event in under a minute.</p>
+            <Link href="/dashboard/events/new" className="inline-block px-6 py-2.5 rounded-full text-sm font-medium"
+              style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}>
+              Create event →
+            </Link>
+          </div>
+        ) : (
+          <div className="grid gap-3">
+            {(upcomingHosting.length ? upcomingHosting : hostingEvents).map(ev => {
+              const badge = HOST_STATUS_BADGE[ev.status] ?? HOST_STATUS_BADGE.published;
+              return (
+                <Link key={ev.id} href={`/dashboard/events/${ev.id}`}
+                  className="p-5 rounded-2xl flex items-start justify-between gap-4"
+                  style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', textDecoration: 'none', color: 'var(--color-fg)' }}>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-base font-semibold truncate" style={{ fontFamily: 'var(--font-display)' }}>{ev.title}</span>
+                      <Badge tone={badge}>{badge.label}</Badge>
+                    </div>
+                    <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
+                      {formatEventDateTime(ev.starts_at)}{ev.location ? ` · ${ev.location}` : ''}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xl font-semibold">{ev.fee_amount > 0 ? formatMoney(ev.fee_amount, ev.fee_currency) : 'Free'}</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* ATTENDING */}
+      <section className="mb-8">
+        <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>Attending</h2>
+        {upcomingAttending.length === 0 ? (
+          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
+            Nothing on your calendar yet. Open an event link from a host to sign up.
+          </p>
+        ) : (
+          <div className="grid gap-3">
+            {upcomingAttending.map(({ row, iso, cancelled }) => row.events && (
+              <Link key={row.id} href={`/e/${row.events.payment_reference}`}
+                className="p-5 rounded-2xl flex items-start justify-between gap-4"
+                style={{
+                  backgroundColor: cancelled ? '#FAFAFA' : 'var(--color-card)',
+                  border:          '1px solid var(--color-border)',
+                  textDecoration:  'none', color: 'var(--color-fg)',
+                  opacity:         cancelled ? 0.75 : 1,
+                }}>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="text-base font-semibold truncate" style={{ fontFamily: 'var(--font-display)', textDecoration: cancelled ? 'line-through' : undefined }}>
+                      {row.events.title}
+                    </span>
+                    {cancelled ? (
+                      <Badge tone={{ bg: '#FEE2E2', fg: 'var(--color-red)' }}>Cancelled by host</Badge>
+                    ) : (
+                      <>
+                        <Badge tone={STATUS_BADGE[row.status]}>{SIGNUP_STATUS_LABELS[row.status]}</Badge>
+                        {Number(row.events.fee_amount) > 0 && (
+                          <Badge tone={PAYMENT_BADGE[row.payment_status]}>{PAYMENT_STATUS_LABELS[row.payment_status]}</Badge>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
+                    {formatEventDateTime(iso)}{row.events.location ? ` · ${row.events.location}` : ''}
+                  </p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-xl font-semibold">{Number(row.events.fee_amount) > 0 ? formatMoney(row.events.fee_amount, row.events.fee_currency) : 'Free'}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
+  );
+}
+
+function Badge({ tone, children }: { tone: { bg: string; fg: string }; children: React.ReactNode }) {
+  return (
+    <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold"
+      style={{ backgroundColor: tone.bg, color: tone.fg }}>
+      {children}
+    </span>
   );
 }

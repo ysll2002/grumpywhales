@@ -87,7 +87,7 @@ export default function EditEventForm({ event }: { event: Event }) {
       setDeleting(false);
       return;
     }
-    router.push('/dashboard/events');
+    router.push('/dashboard');
   };
 
   return (
