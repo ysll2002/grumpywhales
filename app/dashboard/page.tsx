@@ -126,10 +126,11 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
             {(upcomingHosting.length ? upcomingHosting : hostingEvents).map(ev => {
               const badge = HOST_STATUS_BADGE[ev.status] ?? HOST_STATUS_BADGE.published;
               return (
-                <Link key={ev.id} href={`/dashboard/events/${ev.id}`}
-                  className="p-5 rounded-2xl flex items-start justify-between gap-4"
-                  style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', textDecoration: 'none', color: 'var(--color-fg)' }}>
-                  <div className="min-w-0 flex-1">
+                <div key={ev.id} className="p-5 rounded-2xl flex items-start justify-between gap-4 flex-wrap"
+                  style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', color: 'var(--color-fg)' }}>
+                  <Link href={`/dashboard/events/${ev.id}/attendees`}
+                    className="min-w-0 flex-1 block"
+                    style={{ textDecoration: 'none', color: 'inherit' }}>
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="text-base font-semibold truncate" style={{ fontFamily: 'var(--font-display)' }}>{ev.title}</span>
                       <Badge tone={badge}>{badge.label}</Badge>
@@ -137,11 +138,21 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
                     <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
                       {formatEventDateTime(ev.starts_at)}{ev.location ? ` · ${ev.location}` : ''}
                     </p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
+                  </Link>
+                  <div className="flex items-center gap-4 flex-shrink-0">
                     <p className="text-xl font-semibold">{ev.fee_amount > 0 ? formatMoney(ev.fee_amount, ev.fee_currency) : 'Free'}</p>
+                    <Link href={`/dashboard/events/${ev.id}`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium"
+                      style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-fg)', border: '1px solid var(--color-border)', textDecoration: 'none' }}
+                      aria-label="Settings">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                      </svg>
+                      Settings
+                    </Link>
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>
