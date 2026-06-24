@@ -54,7 +54,11 @@ export default async function AttendingPage() {
   // Build derived ISO for upcoming/past split and display
   const enriched = rows
     .filter(r => r.events)
-    .map(r => ({ row: r, iso: occurrenceIso(r.events!.starts_at, r.occurrence_date) }));
+    .map(r => ({
+      row: r,
+      iso: occurrenceIso(r.events!.starts_at, r.occurrence_date),
+      cancelled: (r.events!.cancelled_dates ?? []).includes(r.occurrence_date),
+    }));
 
   const upcoming = enriched.filter(r => new Date(r.iso).getTime() >= now);
   const past     = enriched.filter(r => new Date(r.iso).getTime() <  now).reverse();   // newest past first
@@ -73,7 +77,7 @@ export default async function AttendingPage() {
 }
 
 function Section({ title, rows, empty }:
-  { title: string; rows: { row: SignupRow; iso: string }[]; empty: string }) {
+  { title: string; rows: { row: SignupRow; iso: string; cancelled: boolean }[]; empty: string }) {
   return (
     <section className="mb-10">
       <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>{title}</h2>
@@ -81,19 +85,31 @@ function Section({ title, rows, empty }:
         <p className="text-sm" style={{ color: 'var(--color-muted)' }}>{empty}</p>
       ) : (
         <div className="grid gap-3">
-          {rows.map(({ row, iso }) => row.events && (
+          {rows.map(({ row, iso, cancelled }) => row.events && (
             <Link
               key={row.id}
               href={`/e/${row.events.payment_reference}`}
               className="p-5 rounded-2xl flex items-start justify-between gap-4"
-              style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', textDecoration: 'none', color: 'var(--color-fg)' }}
+              style={{
+                backgroundColor: cancelled ? '#FAFAFA' : 'var(--color-card)',
+                border:          '1px solid var(--color-border)',
+                textDecoration:  'none',
+                color:           'var(--color-fg)',
+                opacity:         cancelled ? 0.75 : 1,
+              }}
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="text-base font-semibold truncate" style={{ fontFamily: 'var(--font-display)' }}>{row.events.title}</span>
-                  <Badge tone={STATUS_BADGE[row.status]}>{SIGNUP_STATUS_LABELS[row.status]}</Badge>
-                  {Number(row.events.fee_amount) > 0 && (
-                    <Badge tone={PAYMENT_BADGE[row.payment_status]}>{PAYMENT_STATUS_LABELS[row.payment_status]}</Badge>
+                  <span className="text-base font-semibold truncate" style={{ fontFamily: 'var(--font-display)', textDecoration: cancelled ? 'line-through' : undefined }}>{row.events.title}</span>
+                  {cancelled ? (
+                    <Badge tone={{ bg: '#FEE2E2', fg: 'var(--color-red)' }}>Cancelled by host</Badge>
+                  ) : (
+                    <>
+                      <Badge tone={STATUS_BADGE[row.status]}>{SIGNUP_STATUS_LABELS[row.status]}</Badge>
+                      {Number(row.events.fee_amount) > 0 && (
+                        <Badge tone={PAYMENT_BADGE[row.payment_status]}>{PAYMENT_STATUS_LABELS[row.payment_status]}</Badge>
+                      )}
+                    </>
                   )}
                 </div>
                 <p className="text-sm" style={{ color: 'var(--color-muted)' }}>

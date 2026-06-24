@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { SignupStatus, PaymentStatus } from '@/lib/signups';
 
 export type AttendeeRow = {
@@ -25,6 +26,8 @@ type Props = {
   eventStarted:   boolean;
   capacity:       number | null;
   publishedAt:    string | null;
+  cancelled:      boolean;
+  isRecurring:    boolean;
   initial:        AttendeeRow[];
 };
 
@@ -50,13 +53,60 @@ const PAY_TONE: Record<PaymentStatus, { bg: string; fg: string }> = {
   paid:   { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
 };
 
-export default function AttendeesTable({ eventId, occurrenceDate, eventStarted, capacity, publishedAt, initial }: Props) {
-  const [rows,       setRows]       = useState<AttendeeRow[]>(initial);
-  const [busy,       setBusy]       = useState(false);
-  const [error,      setError]      = useState('');
-  const [publishing, setPublishing] = useState(false);
-  const [publishMsg, setPublishMsg] = useState('');
-  const [lastPub,    setLastPub]    = useState<string | null>(publishedAt);
+export default function AttendeesTable({
+  eventId, occurrenceDate, eventStarted, capacity, publishedAt, cancelled, isRecurring, initial,
+}: Props) {
+  const router = useRouter();
+  const [rows,        setRows]        = useState<AttendeeRow[]>(initial);
+  const [busy,        setBusy]        = useState(false);
+  const [error,       setError]       = useState('');
+  const [publishing,  setPublishing]  = useState(false);
+  const [publishMsg,  setPublishMsg]  = useState('');
+  const [lastPub,     setLastPub]     = useState<string | null>(publishedAt);
+  const [cancelBusy,  setCancelBusy]  = useState(false);
+  const [isCancelled, setIsCancelled] = useState(cancelled);
+
+  async function cancelOccurrence() {
+    const paidCount = rows.filter(r => r.payment_status === 'paid').length;
+    const refundNote = paidCount
+      ? `\n\nHeads-up: ${paidCount} attendee${paidCount === 1 ? '' : 's'} already paid. They'll be emailed about the cancellation, but you'll need to issue refunds manually in your Stripe dashboard.`
+      : '';
+    const ok = confirm(`Cancel this session only? Other sessions in the series are unaffected. ${rows.length} attendee${rows.length === 1 ? '' : 's'} will be emailed.${refundNote}`);
+    if (!ok) return;
+
+    setCancelBusy(true); setError('');
+    const res = await fetch(`/api/events/${eventId}/cancel-occurrence`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ occurrence_date: occurrenceDate }),
+    });
+    setCancelBusy(false);
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setError(j.detail ?? j.error ?? 'cancel_failed');
+      return;
+    }
+    setIsCancelled(true);
+    router.refresh();
+  }
+
+  async function uncancelOccurrence() {
+    if (!confirm('Bring this session back? Existing sign-ups will need to be re-confirmed by you.')) return;
+    setCancelBusy(true); setError('');
+    const res = await fetch(`/api/events/${eventId}/cancel-occurrence`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ occurrence_date: occurrenceDate }),
+    });
+    setCancelBusy(false);
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setError(j.detail ?? j.error ?? 'uncancel_failed');
+      return;
+    }
+    setIsCancelled(false);
+    router.refresh();
+  }
 
   const acceptedCount = useMemo(() => rows.filter(r => r.status === 'accepted').length, [rows]);
   const pendingCount  = useMemo(() => rows.filter(r => r.status === 'pending').length, [rows]);
@@ -142,17 +192,33 @@ export default function AttendeesTable({ eventId, occurrenceDate, eventStarted, 
 
   return (
     <>
+      {isCancelled && (
+        <div className="rounded-2xl px-5 py-3 mb-6 flex items-center justify-between flex-wrap gap-3"
+          style={{ backgroundColor: '#FEE2E2', border: '1px solid var(--color-red)', color: 'var(--color-red)' }}>
+          <div className="text-sm">
+            <strong>This session is cancelled.</strong> Sign-ups are closed and attendees have been emailed.
+          </div>
+          <button
+            type="button" onClick={uncancelOccurrence} disabled={cancelBusy}
+            className="px-4 py-1.5 rounded-full text-xs font-medium disabled:opacity-50"
+            style={{ backgroundColor: '#FFFFFF', color: 'var(--color-red)', border: '1px solid var(--color-red)', cursor: cancelBusy ? 'wait' : 'pointer' }}
+          >
+            {cancelBusy ? 'Restoring…' : 'Restore session'}
+          </button>
+        </div>
+      )}
+
       <div className="flex items-end justify-between flex-wrap gap-4 mb-6">
         <div className="flex gap-6 text-sm">
           <Stat label="Signed up">{rows.length}</Stat>
           <Stat label="Accepted">{acceptedCount}{capacity != null ? ` / ${capacity}` : ''}</Stat>
           <Stat label="Pending">{pendingCount}</Stat>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-end gap-2">
           <button
             type="button"
             onClick={publish}
-            disabled={publishing || rows.length === 0}
+            disabled={publishing || rows.length === 0 || isCancelled}
             className="px-5 py-2.5 rounded-full text-sm font-medium disabled:opacity-50"
             style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', border: 'none', cursor: publishing ? 'wait' : 'pointer' }}
           >
@@ -162,6 +228,15 @@ export default function AttendeesTable({ eventId, occurrenceDate, eventStarted, 
             <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
               Last sent {new Date(lastPub).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
             </p>
+          )}
+          {isRecurring && !isCancelled && (
+            <button
+              type="button" onClick={cancelOccurrence} disabled={cancelBusy}
+              className="text-xs disabled:opacity-50"
+              style={{ color: 'var(--color-red)', background: 'none', border: 'none', cursor: cancelBusy ? 'wait' : 'pointer' }}
+            >
+              {cancelBusy ? 'Cancelling…' : 'Cancel this session'}
+            </button>
           )}
         </div>
       </div>

@@ -46,6 +46,7 @@ export type Event = {
   lng:                    number | null;
   payment_reference:      string | null;
   attendees_published_at: string | null;
+  cancelled_dates:        string[];   // DATE[] in DB, "YYYY-MM-DD" strings here
   created_at:             string;
   updated_at:             string;
 };

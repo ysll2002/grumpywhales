@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // Load event + signup for this occurrence in parallel
   const [eventRes, signupRes] = await Promise.all([
     supabase.from('events')
-      .select('id, title, fee_amount, fee_currency, payment_reference, status')
+      .select('id, title, fee_amount, fee_currency, payment_reference, status, cancelled_dates')
       .eq('id', eventId).maybeSingle(),
     supabase.from('event_signups')
       .select('id, status, payment_status, stripe_session_id')
@@ -29,6 +29,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const event  = eventRes.data;
   const signup = signupRes.data;
+  if (event && (event.cancelled_dates ?? []).includes(body.occurrence_date)) {
+    return NextResponse.json({ error: 'occurrence_cancelled' }, { status: 409 });
+  }
   if (!event)  return NextResponse.json({ error: 'event_not_found' }, { status: 404 });
   if (event.status !== 'published') {
     return NextResponse.json({ error: 'event_not_open' }, { status: 409 });

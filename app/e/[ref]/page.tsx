@@ -166,41 +166,56 @@ export default async function PublicEventPage({
               const date = occurrenceDate(iso);
               const accepted = countByDate.get(date) ?? 0;
               const isFull = event.capacity != null && accepted >= event.capacity;
+              const isCancelled = (event.cancelled_dates ?? []).includes(date);
               const mine = myByDate.get(date) ?? null;
               const justPaid = paid === '1' && occurrence === date && mine?.payment_status === 'paid';
               const justCancelled = paid === '0' && occurrence === date;
               return (
                 <div key={date} className="p-5 rounded-2xl flex items-start justify-between gap-4 flex-wrap"
-                  style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
+                  style={{
+                    backgroundColor: isCancelled ? '#FAFAFA' : 'var(--color-card)',
+                    border: '1px solid var(--color-border)',
+                    opacity: isCancelled ? 0.75 : 1,
+                  }}>
                   <div className="min-w-0">
-                    <p className="text-base font-semibold" style={{ fontFamily: 'var(--font-display)' }}>
+                    <p className="text-base font-semibold flex items-center gap-2" style={{ fontFamily: 'var(--font-display)', textDecoration: isCancelled ? 'line-through' : undefined }}>
                       {formatEventDateTime(iso)}
                     </p>
-                    {event.capacity != null && (
-                      <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>
-                        {accepted} / {event.capacity} on the list{isFull ? ' · full' : ''}
+                    {isCancelled ? (
+                      <p className="text-xs mt-1 font-semibold uppercase tracking-wider" style={{ color: 'var(--color-red)' }}>
+                        Cancelled by host
                       </p>
-                    )}
-                    {justPaid && (
-                      <p className="text-xs mt-1" style={{ color: 'var(--color-accent-dk)' }}>✓ Payment received — see you there.</p>
-                    )}
-                    {justCancelled && (
-                      <p className="text-xs mt-1" style={{ color: 'var(--color-red)' }}>Payment cancelled. You can try again.</p>
+                    ) : (
+                      <>
+                        {event.capacity != null && (
+                          <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>
+                            {accepted} / {event.capacity} on the list{isFull ? ' · full' : ''}
+                          </p>
+                        )}
+                        {justPaid && (
+                          <p className="text-xs mt-1" style={{ color: 'var(--color-accent-dk)' }}>✓ Payment received — see you there.</p>
+                        )}
+                        {justCancelled && (
+                          <p className="text-xs mt-1" style={{ color: 'var(--color-red)' }}>Payment cancelled. You can try again.</p>
+                        )}
+                      </>
                     )}
                   </div>
-                  <SignupButton
-                    eventId={event.id}
-                    occurrenceDate={date}
-                    occurrenceIso={iso}
-                    feeLabel={feeLabel}
-                    hasFee={hasFee}
-                    signedIn={!!session}
-                    loginHref={loginRef}
-                    currentStatus={mine?.status ?? null}
-                    paymentStatus={mine?.payment_status ?? null}
-                    signupMode={event.signup_mode}
-                    isFull={isFull}
-                  />
+                  {!isCancelled && (
+                    <SignupButton
+                      eventId={event.id}
+                      occurrenceDate={date}
+                      occurrenceIso={iso}
+                      feeLabel={feeLabel}
+                      hasFee={hasFee}
+                      signedIn={!!session}
+                      loginHref={loginRef}
+                      currentStatus={mine?.status ?? null}
+                      paymentStatus={mine?.payment_status ?? null}
+                      signupMode={event.signup_mode}
+                      isFull={isFull}
+                    />
+                  )}
                 </div>
               );
             })}

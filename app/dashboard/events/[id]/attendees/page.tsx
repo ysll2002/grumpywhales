@@ -157,6 +157,8 @@ export default async function AttendeesPage({
         eventStarted={eventStarted}
         capacity={ev.capacity}
         publishedAt={ev.attendees_published_at}
+        cancelled={(ev.cancelled_dates ?? []).includes(selected)}
+        isRecurring={ev.recurrence !== 'none'}
         initial={initial}
       />
     </div>

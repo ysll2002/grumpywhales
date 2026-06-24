@@ -30,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const body = await req.json().catch(() => ({}));
   const { data: event } = await supabase
     .from('events')
-    .select('id, status, starts_at, recurrence, signup_mode, capacity, fee_amount')
+    .select('id, status, starts_at, recurrence, signup_mode, capacity, fee_amount, cancelled_dates')
     .eq('id', id)
     .maybeSingle();
   if (!event) return NextResponse.json({ error: 'not_found' }, { status: 404 });
@@ -41,6 +41,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const occDate = resolveOccurrenceDate(event, body.occurrence_date);
   if (!occDate) return NextResponse.json({ error: 'invalid_occurrence' }, { status: 400 });
+  if ((event.cancelled_dates ?? []).includes(occDate)) {
+    return NextResponse.json({ error: 'occurrence_cancelled' }, { status: 409 });
+  }
 
   // Existing signup for this specific occurrence — block unless cancelled.
   const { data: existing } = await supabase
