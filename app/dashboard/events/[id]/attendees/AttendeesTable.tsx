@@ -21,14 +21,16 @@ export type AttendeeRow = {
 };
 
 type Props = {
-  eventId:        string;
-  occurrenceDate: string;       // YYYY-MM-DD
-  eventStarted:   boolean;
-  capacity:       number | null;
-  publishedAt:    string | null;
-  cancelled:      boolean;
-  isRecurring:    boolean;
-  initial:        AttendeeRow[];
+  eventId:          string;
+  occurrenceDate:   string;       // YYYY-MM-DD
+  eventStarted:     boolean;
+  capacity:         number | null;
+  publishedAt:      string | null;
+  cancelled:        boolean;
+  isRecurring:      boolean;
+  currentProfileId: string;
+  signupMode:       'first_come' | 'curated';
+  initial:          AttendeeRow[];
 };
 
 const STATUS_OPTIONS: { value: SignupStatus; label: string }[] = [
@@ -54,7 +56,8 @@ const PAY_TONE: Record<PaymentStatus, { bg: string; fg: string }> = {
 };
 
 export default function AttendeesTable({
-  eventId, occurrenceDate, eventStarted, capacity, publishedAt, cancelled, isRecurring, initial,
+  eventId, occurrenceDate, eventStarted, capacity, publishedAt, cancelled, isRecurring,
+  currentProfileId, signupMode, initial,
 }: Props) {
   const router = useRouter();
   const [rows,        setRows]        = useState<AttendeeRow[]>(initial);
@@ -110,6 +113,25 @@ export default function AttendeesTable({
 
   const acceptedCount = useMemo(() => rows.filter(r => r.status === 'accepted').length, [rows]);
   const pendingCount  = useMemo(() => rows.filter(r => r.status === 'pending').length, [rows]);
+  const adminOnList   = useMemo(() => rows.some(r => r.profile_id === currentProfileId), [rows, currentProfileId]);
+
+  const [joinBusy, setJoinBusy] = useState(false);
+  async function joinSelf() {
+    setJoinBusy(true);
+    setError('');
+    const res = await fetch(`/api/events/${eventId}/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ occurrence_date: occurrenceDate }),
+    });
+    setJoinBusy(false);
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setError(j.detail ?? j.error ?? 'join_failed');
+      return;
+    }
+    router.refresh();
+  }
 
   async function publish() {
     const breakdown = [
@@ -215,6 +237,17 @@ export default function AttendeesTable({
           <Stat label="Pending">{pendingCount}</Stat>
         </div>
         <div className="flex flex-col items-end gap-2">
+          {!adminOnList && !isCancelled && (
+            <button
+              type="button"
+              onClick={joinSelf}
+              disabled={joinBusy}
+              className="px-5 py-2 rounded-full text-sm font-medium disabled:opacity-50"
+              style={{ backgroundColor: 'var(--color-card)', color: 'var(--color-fg)', border: '1px solid var(--color-border)', cursor: joinBusy ? 'wait' : 'pointer' }}
+            >
+              {joinBusy ? 'Joining…' : signupMode === 'curated' ? '+ Request to join' : '+ Add me to this session'}
+            </button>
+          )}
           <button
             type="button"
             onClick={publish}

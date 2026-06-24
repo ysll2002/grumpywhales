@@ -16,6 +16,7 @@ type Props = {
   paymentStatus:    PaymentStatus | null;
   signupMode:       'first_come' | 'curated';
   isFull:           boolean;
+  listPublished:    boolean;         // curated: has the host emailed the final list yet?
 };
 
 // The final attendee list is announced the day before the session.
@@ -28,7 +29,7 @@ function announcementDateLabel(occurrenceIso: string): string | null {
 
 export default function SignupButton({
   eventId, occurrenceDate, occurrenceIso, feeLabel, hasFee, signedIn, loginHref,
-  currentStatus, paymentStatus, signupMode, isFull,
+  currentStatus, paymentStatus, signupMode, isFull, listPublished,
 }: Props) {
   const router = useRouter();
   const [busy,    setBusy]    = useState(false);
@@ -101,11 +102,15 @@ export default function SignupButton({
   const announceDay = announcementDateLabel(occurrenceIso);
 
   if (isActive) {
-    const label =
-      currentStatus === 'accepted'   ? "You're in" :
-      currentStatus === 'pending'    ? "Signed up — awaiting the final list" :
-      currentStatus === 'waitlisted' ? "You're on the waitlist" :
-      currentStatus;
+    // For curated events, suppress the final accepted/waitlisted/declined state
+    // until the host actually publishes — until then everyone sees "to be published".
+    const showProvisional = signupMode === 'curated' && !listPublished;
+    const label = showProvisional
+      ? "Signed up — final list to be published"
+      : currentStatus === 'accepted'   ? "You're in"
+      : currentStatus === 'pending'    ? "Signed up — final list to be published"
+      : currentStatus === 'waitlisted' ? "You're on the waitlist"
+      : currentStatus;
 
     return (
       <div className="flex flex-col gap-2 items-start">
@@ -121,7 +126,7 @@ export default function SignupButton({
             </span>
           )}
         </div>
-        {currentStatus === 'pending' && signupMode === 'curated' && (
+        {signupMode === 'curated' && !listPublished && (
           <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
             Final list announced {announceDay ? `on ${announceDay}` : 'before the session'}.
           </p>

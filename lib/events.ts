@@ -44,11 +44,12 @@ export type Event = {
   capacity:           number | null;
   lat:                    number | null;
   lng:                    number | null;
-  payment_reference:      string | null;
-  attendees_published_at: string | null;
-  cancelled_dates:        string[];   // DATE[] in DB, "YYYY-MM-DD" strings here
-  created_at:             string;
-  updated_at:             string;
+  payment_reference:          string | null;
+  attendees_published_at:     string | null;
+  cancelled_dates:            string[];   // DATE[] in DB, "YYYY-MM-DD" strings here
+  published_occurrence_dates: string[];   // dates whose final list has been emailed
+  created_at:                 string;
+  updated_at:                 string;
 };
 
 export function formatMoney(amount: number, currency = 'GBP'): string {

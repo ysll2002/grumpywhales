@@ -180,7 +180,8 @@ export default async function PublicEventPage({
               const date = occurrenceDate(iso);
               const accepted = countByDate.get(date) ?? 0;
               const isFull = event.capacity != null && accepted >= event.capacity;
-              const isCancelled = (event.cancelled_dates ?? []).includes(date);
+              const isCancelled    = (event.cancelled_dates ?? []).includes(date);
+              const listPublished  = (event.published_occurrence_dates ?? []).includes(date);
               const mine = myByDate.get(date) ?? null;
               const justPaid = paid === '1' && occurrence === date && mine?.payment_status === 'paid';
               const justCancelled = paid === '0' && occurrence === date;
@@ -228,6 +229,7 @@ export default async function PublicEventPage({
                       paymentStatus={mine?.payment_status ?? null}
                       signupMode={event.signup_mode}
                       isFull={isFull}
+                      listPublished={listPublished}
                     />
                   )}
                 </div>

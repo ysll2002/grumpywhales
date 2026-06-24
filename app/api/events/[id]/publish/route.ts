@@ -29,7 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // Event + host details
   const { data: event } = await supabase
     .from('events')
-    .select('title, starts_at, location, fee_amount, fee_currency, payment_reference, admin_id')
+    .select('title, starts_at, location, fee_amount, fee_currency, payment_reference, admin_id, published_occurrence_dates')
     .eq('id', eventId)
     .maybeSingle();
   if (!event) return NextResponse.json({ error: 'not_found' }, { status: 404 });
@@ -77,9 +77,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const skipped = results.filter(r => r.status === 'fulfilled' && (r.value as { skipped?: boolean }).skipped).length;
   const failed  = results.filter(r => r.status === 'rejected').length;
 
+  const alreadyPublished = (event.published_occurrence_dates ?? []).includes(body.occurrence_date);
   await supabase.from('events').update({
-    attendees_published_at: new Date().toISOString(),
-    updated_at:             new Date().toISOString(),
+    attendees_published_at:     new Date().toISOString(),
+    published_occurrence_dates: alreadyPublished
+      ? event.published_occurrence_dates
+      : [...(event.published_occurrence_dates ?? []), body.occurrence_date],
+    updated_at:                 new Date().toISOString(),
   }).eq('id', eventId);
 
   return NextResponse.json({ sent, skipped, failed });
