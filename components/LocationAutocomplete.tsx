@@ -19,8 +19,10 @@ export default function LocationAutocomplete({ value, onChange, inputStyle, plac
   // The user's free-text query lives in `value` (the parent's source of truth).
   // We only fetch when they're actively typing — once they've selected a
   // result we suppress the next fetch via `skipNextFetchRef` so the dropdown
-  // doesn't immediately reopen.
-  const skipNextFetchRef = useRef(false);
+  // doesn't immediately reopen. Initialise to `true` so the first effect run
+  // (with the pre-loaded address on the edit page) doesn't trigger a fetch
+  // and pop the dropdown either.
+  const skipNextFetchRef = useRef(true);
   const wrapRef          = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
