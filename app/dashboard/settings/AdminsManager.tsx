@@ -94,12 +94,10 @@ export default function AdminsManager({ initial }: { initial: AdminRow[] }) {
               <tr key={r.email} style={{ borderBottom: '1px solid var(--color-border)' }}>
                 <td className="px-4 py-3">
                   <span className="font-medium">{r.email}</span>
-                  {r.founder && (
-                    <span className="ml-2 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold"
-                      style={{ backgroundColor: '#FFF4B8', color: '#7C5800' }}>
-                      Founder
-                    </span>
-                  )}
+                  <span className="ml-2 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold"
+                    style={{ backgroundColor: '#D1FAE5', color: 'var(--color-accent-dk)' }}>
+                    Admin
+                  </span>
                 </td>
                 <td className="px-4 py-3" style={{ color: 'var(--color-muted)' }}>
                   {r.created_at
