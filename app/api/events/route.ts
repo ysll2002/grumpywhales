@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { generateEventReference, type EventStatus, type EventRecurrence, type EventSignupMode } from '@/lib/events';
+import { isPlatformAdmin } from '@/lib/platform-admin';
 
 const VALID_STATUS: EventStatus[] = ['published', 'closed', 'cancelled'];
 const VALID_RECURRENCE: EventRecurrence[] = ['none', 'daily', 'weekly', 'monthly'];
@@ -30,6 +31,9 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.profileId) {
     return NextResponse.json({ error: 'unauthorised' }, { status: 401 });
+  }
+  if (!isPlatformAdmin(session.user.email)) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
 
   const body = await req.json().catch(() => null);

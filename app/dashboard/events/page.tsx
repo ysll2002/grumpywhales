@@ -3,6 +3,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import Link from 'next/link';
 import { formatEventDateTime, formatMoney, type Event } from '@/lib/events';
 import { SIGNUP_STATUS_LABELS, PAYMENT_STATUS_LABELS, type SignupStatus, type PaymentStatus } from '@/lib/signups';
+import { isPlatformAdmin } from '@/lib/platform-admin';
 
 const STATUS_BADGE: Record<SignupStatus, { bg: string; fg: string }> = {
   accepted:   { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
@@ -44,6 +45,7 @@ function occurrenceIso(eventStartsAt: string, occDate: string): string {
 export default async function DashboardHome({ searchParams }: { searchParams: Promise<{ created?: string }> }) {
   const session = await auth();
   const profileId = session!.user.profileId;
+  const isAdmin   = isPlatformAdmin(session?.user?.email);
   const { created } = await searchParams;
   const now = Date.now();
 
@@ -102,17 +104,21 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
         </div>
       </div>
 
-      {/* HOSTING */}
+      {/* HOSTING — only platform admins can create events, and the Hosting
+          section is only meaningful for users who have hosted at least one. */}
+      {(isAdmin || hostingEvents.length > 0) && (
       <section className="mb-12">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
           <h2 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)' }}>Hosting</h2>
-          <Link
-            href="/dashboard/events/new"
-            className="px-5 py-2.5 rounded-full text-sm font-medium"
-            style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}
-          >
-            + New event
-          </Link>
+          {isAdmin && (
+            <Link
+              href="/dashboard/events/new"
+              className="px-5 py-2.5 rounded-full text-sm font-medium"
+              style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}
+            >
+              + New event
+            </Link>
+          )}
         </div>
         {hostingEvents.length === 0 ? (
           <div className="p-10 rounded-2xl text-center" style={{ backgroundColor: 'var(--color-card)', border: '1px dashed var(--color-border)' }}>
@@ -160,6 +166,8 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
           </div>
         )}
       </section>
+
+      )}
 
       {/* ATTENDING */}
       <section className="mb-8">
