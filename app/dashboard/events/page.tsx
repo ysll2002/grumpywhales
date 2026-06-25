@@ -45,7 +45,7 @@ function occurrenceIso(eventStartsAt: string, occDate: string): string {
 export default async function DashboardHome({ searchParams }: { searchParams: Promise<{ created?: string }> }) {
   const session = await auth();
   const profileId = session!.user.profileId;
-  const isAdmin   = isPlatformAdmin(session?.user?.email);
+  const isAdmin   = await isPlatformAdmin(session?.user?.email);
   const { created } = await searchParams;
   const now = Date.now();
 

@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (!session?.user?.profileId) {
     return NextResponse.json({ error: 'unauthorised' }, { status: 401 });
   }
-  if (!isPlatformAdmin(session.user.email)) {
+  if (!(await isPlatformAdmin(session.user.email))) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
 

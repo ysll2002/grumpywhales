@@ -3,10 +3,19 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import LogoutButton from '@/components/LogoutButton';
+import { isPlatformAdmin } from '@/lib/platform-admin';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session) redirect('/login');
+  const isAdmin = await isPlatformAdmin(session.user?.email);
+
+  const nav = [
+    { href: '/dashboard/events',  label: 'My events' },
+    { href: '/dashboard/unpaid',  label: 'Unpaid' },
+    { href: '/dashboard/profile', label: 'Profile' },
+    ...(isAdmin ? [{ href: '/dashboard/settings', label: 'Settings' }] : []),
+  ];
 
   return (
     <div className="flex min-h-screen">
@@ -16,11 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           GrumpyWhales
         </Link>
         <nav className="flex flex-col gap-1 px-2 text-sm">
-          {[
-            { href: '/dashboard/events',  label: 'My events' },
-            { href: '/dashboard/unpaid',  label: 'Unpaid' },
-            { href: '/dashboard/profile', label: 'Profile' },
-          ].map(item => (
+          {nav.map(item => (
             <Link key={item.href} href={item.href} className="px-3 py-2 rounded-lg hover:bg-[rgba(255,255,255,0.08)]" style={{ color: 'rgba(255,255,255,0.78)' }}>
               {item.label}
             </Link>

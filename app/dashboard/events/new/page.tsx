@@ -6,7 +6,7 @@ import CreateEventForm from './CreateEventForm';
 
 export default async function NewEventPage() {
   const session = await auth();
-  if (!isPlatformAdmin(session?.user?.email)) notFound();
+  if (!(await isPlatformAdmin(session?.user?.email))) notFound();
   return (
     <div className="p-8 max-w-2xl">
       <Link href="/dashboard/events" className="text-sm mb-4 inline-block" style={{ color: 'var(--color-muted)', textDecoration: 'none' }}>
