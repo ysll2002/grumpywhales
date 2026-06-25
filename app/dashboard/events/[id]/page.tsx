@@ -4,17 +4,19 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import EditEventForm from './EditEventForm';
 import { type Event } from '@/lib/events';
+import { isEventAdmin } from '@/lib/event-admin';
 
 export default async function EventAdminPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   const profileId = session!.user.profileId;
   const { id } = await params;
 
+  if (!(await isEventAdmin(id, profileId))) notFound();
+
   const { data: event } = await supabase
     .from('events')
     .select('*')
     .eq('id', id)
-    .eq('admin_id', profileId)
     .maybeSingle();
 
   if (!event) notFound();

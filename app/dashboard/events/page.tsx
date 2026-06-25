@@ -49,8 +49,14 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
   const { created } = await searchParams;
   const now = Date.now();
 
+  // Platform admins manage every event, so they see the full list under Hosting.
+  // Everyone else only sees the events they personally admin.
+  const hostingQuery = isAdmin
+    ? supabase.from('events').select('*').order('starts_at', { ascending: true })
+    : supabase.from('events').select('*').eq('admin_id', profileId).order('starts_at', { ascending: true });
+
   const [hostingRes, attendingRes] = await Promise.all([
-    supabase.from('events').select('*').eq('admin_id', profileId).order('starts_at', { ascending: true }),
+    hostingQuery,
     supabase
       .from('event_signups')
       .select('id, occurrence_date, status, payment_status, events(*)')

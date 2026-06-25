@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
+import { isEventAdmin } from '@/lib/event-admin';
 import { type EventStatus, type EventRecurrence, type EventSignupMode } from '@/lib/events';
 
 const VALID_STATUS: EventStatus[] = ['published', 'closed', 'cancelled'];
 const VALID_RECURRENCE: EventRecurrence[] = ['none', 'daily', 'weekly', 'monthly'];
 const VALID_SIGNUP_MODE: EventSignupMode[] = ['first_come', 'curated'];
 
-async function loadOwnedEvent(eventId: string, profileId: string) {
+async function loadManageableEvent(eventId: string, profileId: string) {
+  if (!(await isEventAdmin(eventId, profileId))) {
+    return { data: null, error: null };
+  }
   const { data, error } = await supabase
     .from('events')
     .select('*')
     .eq('id', eventId)
-    .eq('admin_id', profileId)
     .maybeSingle();
   return { data, error };
 }
@@ -22,7 +25,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (!session?.user?.profileId) return NextResponse.json({ error: 'unauthorised' }, { status: 401 });
 
   const { id } = await params;
-  const { data, error } = await loadOwnedEvent(id, session.user.profileId);
+  const { data, error } = await loadManageableEvent(id, session.user.profileId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data)  return NextResponse.json({ error: 'not_found' }, { status: 404 });
@@ -34,7 +37,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!session?.user?.profileId) return NextResponse.json({ error: 'unauthorised' }, { status: 401 });
 
   const { id } = await params;
-  const { data: existing } = await loadOwnedEvent(id, session.user.profileId);
+  const { data: existing } = await loadManageableEvent(id, session.user.profileId);
   if (!existing) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   const body = await req.json().catch(() => null);
@@ -118,7 +121,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .from('events')
     .update(patch)
     .eq('id', id)
-    .eq('admin_id', session.user.profileId)
     .select('*')
     .single();
 
@@ -142,11 +144,13 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!session?.user?.profileId) return NextResponse.json({ error: 'unauthorised' }, { status: 401 });
 
   const { id } = await params;
+  if (!(await isEventAdmin(id, session.user.profileId))) {
+    return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  }
   const { error } = await supabase
     .from('events')
     .delete()
-    .eq('id', id)
-    .eq('admin_id', session.user.profileId);
+    .eq('id', id);
 
   if (error) {
     return NextResponse.json({ error: 'delete_failed', detail: error.message }, { status: 500 });
