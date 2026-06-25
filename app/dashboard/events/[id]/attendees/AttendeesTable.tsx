@@ -237,39 +237,41 @@ export default function AttendeesTable({
           <Stat label="Pending">{pendingCount}</Stat>
         </div>
         <div className="flex flex-col items-end gap-2">
-          {!adminOnList && !isCancelled && (
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {!adminOnList && !isCancelled && (
+              <button
+                type="button"
+                onClick={joinSelf}
+                disabled={joinBusy}
+                className="px-5 py-2.5 rounded-full text-sm font-medium disabled:opacity-50"
+                style={{ backgroundColor: '#2563EB', color: '#FFFFFF', border: 'none', cursor: joinBusy ? 'wait' : 'pointer' }}
+              >
+                {joinBusy ? 'Joining…' : signupMode === 'curated' ? '+ Request to join' : '+ Add me to this session'}
+              </button>
+            )}
             <button
               type="button"
-              onClick={joinSelf}
-              disabled={joinBusy}
-              className="px-5 py-2 rounded-full text-sm font-medium disabled:opacity-50"
-              style={{ backgroundColor: 'var(--color-card)', color: 'var(--color-fg)', border: '1px solid var(--color-border)', cursor: joinBusy ? 'wait' : 'pointer' }}
+              onClick={publish}
+              disabled={publishing || rows.length === 0 || isCancelled}
+              className="px-5 py-2.5 rounded-full text-sm font-medium disabled:opacity-50"
+              style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', border: 'none', cursor: publishing ? 'wait' : 'pointer' }}
             >
-              {joinBusy ? 'Joining…' : signupMode === 'curated' ? '+ Request to join' : '+ Add me to this session'}
+              {publishing ? 'Publishing…' : lastPub ? 'Re-publish & email' : 'Publish & email everyone'}
             </button>
-          )}
-          <button
-            type="button"
-            onClick={publish}
-            disabled={publishing || rows.length === 0 || isCancelled}
-            className="px-5 py-2.5 rounded-full text-sm font-medium disabled:opacity-50"
-            style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', border: 'none', cursor: publishing ? 'wait' : 'pointer' }}
-          >
-            {publishing ? 'Publishing…' : lastPub ? 'Re-publish & email' : 'Publish & email everyone'}
-          </button>
+            {isRecurring && !isCancelled && (
+              <button
+                type="button" onClick={cancelOccurrence} disabled={cancelBusy}
+                className="px-5 py-2.5 rounded-full text-sm font-medium disabled:opacity-50"
+                style={{ backgroundColor: 'var(--color-red)', color: '#FFFFFF', border: 'none', cursor: cancelBusy ? 'wait' : 'pointer' }}
+              >
+                {cancelBusy ? 'Cancelling…' : 'Cancel this session'}
+              </button>
+            )}
+          </div>
           {lastPub && (
             <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
               Last sent {new Date(lastPub).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
             </p>
-          )}
-          {isRecurring && !isCancelled && (
-            <button
-              type="button" onClick={cancelOccurrence} disabled={cancelBusy}
-              className="px-5 py-2 rounded-full text-sm font-medium disabled:opacity-50"
-              style={{ backgroundColor: 'var(--color-red)', color: '#FFFFFF', border: 'none', cursor: cancelBusy ? 'wait' : 'pointer' }}
-            >
-              {cancelBusy ? 'Cancelling…' : 'Cancel this session'}
-            </button>
           )}
         </div>
       </div>
