@@ -100,13 +100,22 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
             Everything you&apos;re hosting and attending in one place.
           </p>
         </div>
-        <Link
-          href="/dashboard/events/new"
-          className="px-5 py-2.5 rounded-full text-sm font-medium"
-          style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}
-        >
-          + New event
-        </Link>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Link
+            href="/dashboard/events/find"
+            className="px-5 py-2.5 rounded-full text-sm font-medium"
+            style={{ backgroundColor: 'var(--color-card)', color: 'var(--color-fg)', border: '1px solid var(--color-border)', textDecoration: 'none' }}
+          >
+            Find events
+          </Link>
+          <Link
+            href="/dashboard/events/new"
+            className="px-5 py-2.5 rounded-full text-sm font-medium"
+            style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}
+          >
+            + New event
+          </Link>
+        </div>
       </div>
 
       {/* HOSTING */}

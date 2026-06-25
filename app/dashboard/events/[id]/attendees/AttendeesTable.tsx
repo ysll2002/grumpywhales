@@ -265,8 +265,8 @@ export default function AttendeesTable({
           {isRecurring && !isCancelled && (
             <button
               type="button" onClick={cancelOccurrence} disabled={cancelBusy}
-              className="text-xs disabled:opacity-50"
-              style={{ color: 'var(--color-red)', background: 'none', border: 'none', cursor: cancelBusy ? 'wait' : 'pointer' }}
+              className="px-5 py-2 rounded-full text-sm font-medium disabled:opacity-50"
+              style={{ backgroundColor: 'var(--color-red)', color: '#FFFFFF', border: 'none', cursor: cancelBusy ? 'wait' : 'pointer' }}
             >
               {cancelBusy ? 'Cancelling…' : 'Cancel this session'}
             </button>
