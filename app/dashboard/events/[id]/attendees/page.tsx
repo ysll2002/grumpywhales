@@ -117,8 +117,8 @@ export default async function AttendeesPage({
 
   return (
     <div className="p-8 max-w-6xl">
-      <Link href={`/dashboard/events/${ev.id}`} className="text-sm mb-4 inline-block" style={{ color: 'var(--color-muted)', textDecoration: 'none' }}>
-        ← Back to event
+      <Link href="/dashboard" className="text-sm mb-4 inline-block" style={{ color: 'var(--color-muted)', textDecoration: 'none' }}>
+        ← My events
       </Link>
 
       <h1 className="text-3xl font-semibold mb-1" style={{ fontFamily: 'var(--font-display)' }}>Attendees</h1>
