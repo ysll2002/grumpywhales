@@ -123,11 +123,7 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
         {hostingEvents.length === 0 ? (
           <div className="p-10 rounded-2xl text-center" style={{ backgroundColor: 'var(--color-card)', border: '1px dashed var(--color-border)' }}>
             <p className="text-base mb-2" style={{ fontFamily: 'var(--font-display)' }}>No events yet</p>
-            <p className="text-sm mb-5" style={{ color: 'var(--color-muted)' }}>Create your first event in under a minute.</p>
-            <Link href="/dashboard/events/new" className="inline-block px-6 py-2.5 rounded-full text-sm font-medium"
-              style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}>
-              Create event →
-            </Link>
+            <p className="text-sm" style={{ color: 'var(--color-muted)' }}>Create your first event in under a minute.</p>
           </div>
         ) : (
           <div className="grid gap-3">
