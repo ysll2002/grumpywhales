@@ -26,9 +26,9 @@ export default function TermsPage() {
 
         <Section title="2. What the Service does">
           <p>
-            GrumpyWhales lets you create invoices, send them to your clients by email, optionally connect a UK bank account
-            via Plaid Open Banking so we can automatically detect incoming payments matching your invoice references, and
-            send polite reminder and thank-you emails on your behalf. The Service is provided as-is, free of charge.
+            GrumpyWhales lets you create paid or free events, collect sign-ups from attendees, take card payments via
+            Stripe, and email attendees with their status and event details. The Service is provided as-is, free for
+            hosts (Stripe&apos;s standard processing fees apply on paid sessions).
           </p>
         </Section>
 
@@ -64,7 +64,7 @@ export default function TermsPage() {
             <li>Use the Service to invoice for goods or services you have not provided.</li>
             <li>Attempt to access another user&apos;s account or data.</li>
             <li>Scrape, reverse-engineer, or interfere with the Service or its underlying infrastructure.</li>
-            <li>Use the Service in any way that breaches the acceptable use policies of Plaid, Resend, Supabase, Vercel or Google.</li>
+            <li>Use the Service in any way that breaches the acceptable use policies of Stripe, Resend, Supabase, Vercel or Google.</li>
           </ul>
           <p>We may suspend or terminate your account at any time if we reasonably believe you&apos;ve breached these terms.</p>
         </Section>
@@ -78,11 +78,11 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="8. Open Banking connections">
+        <Section title="8. Payments via Stripe">
           <p>
-            Bank connections are made via Plaid Financial Ltd, an FCA-authorised Account Information Service Provider.
-            You give consent directly to Plaid and your bank when connecting. We only request read access to transactions.
-            You may disconnect at any time. Re-authorisation is required every 90 days under PSD2 rules.
+            Card payments for paid events are processed by Stripe Payments UK, Ltd. By paying, you agree to Stripe&apos;s
+            Terms of Service. We never see or store full card numbers. Refunds are arranged directly between the host and
+            the attendee; GrumpyWhales does not hold or transfer funds on a host&apos;s behalf.
           </p>
         </Section>
 

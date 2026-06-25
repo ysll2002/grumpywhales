@@ -4,7 +4,7 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: 'Privacy Policy',
   description:
-    'How GrumpyWhales collects, uses, stores, and shares personal data — including Open Banking transaction data — under UK GDPR.',
+    'How GrumpyWhales collects, uses, stores, and shares personal data — under UK GDPR.',
 };
 
 const EFFECTIVE = '12 June 2026';
@@ -38,7 +38,7 @@ export default function PrivacyPage() {
             <li><strong>Business details:</strong> any company name, VAT registration number and business address you choose to add to your profile so they appear on invoices.</li>
             <li><strong>Client records:</strong> the names, emails and addresses of the clients you invoice, which you provide.</li>
             <li><strong>Invoice data:</strong> the invoices you create — amounts, line items, descriptions, dates, payment references.</li>
-            <li><strong>Bank connection data (Open Banking):</strong> if you connect a UK bank account via Plaid, we store: the bank&apos;s name, an opaque Plaid access token (server-side only), the names and balances of accounts you authorise, and individual transactions (date, amount, description, counterparty name). We <strong>never</strong> see or store your online banking username or password.</li>
+            <li><strong>Payment data (Stripe):</strong> if you pay for an event by card, Stripe processes the card transaction and returns to us a payment intent identifier and the paid status. We <strong>never</strong> see or store your full card number, CVC or expiry date — these stay with Stripe.</li>
             <li><strong>Email activity:</strong> the email address invoices and chase emails are sent to, the Resend message ID, the timestamp, and (when available) whether the email was opened.</li>
             <li><strong>Technical data:</strong> IP address, browser user agent, pages viewed (via Google Analytics 4 with IP anonymisation).</li>
             <li><strong>Cookies:</strong> a session cookie for authentication (essential) and a Google Analytics cookie (analytics).</li>
@@ -56,7 +56,7 @@ export default function PrivacyPage() {
             <tbody style={{ borderColor: 'var(--color-border)' }}>
               <Row purpose="Creating and managing your account; letting you log in" basis="Performance of a contract with you" />
               <Row purpose="Sending invoices and chase emails to your clients on your instruction" basis="Performance of a contract with you" />
-              <Row purpose="Connecting to your bank via Plaid and matching incoming payments to invoices" basis="Performance of a contract with you (you actively choose to connect a bank)" />
+              <Row purpose="Processing card payments for paid events via Stripe" basis="Performance of a contract with you" />
               <Row purpose="Keeping the service secure (rate-limiting, abuse detection, error logs)" basis="Our legitimate interest in operating a secure service" />
               <Row purpose="Anonymised product analytics" basis="Our legitimate interest in improving the product" />
               <Row purpose="Responding to legal requests" basis="Legal obligation" />
@@ -64,18 +64,16 @@ export default function PrivacyPage() {
           </table>
         </Section>
 
-        <Section title="4. Open Banking — what Plaid does on our behalf">
+        <Section title="4. Card payments — what Stripe does on our behalf">
           <p>
-            When you connect a bank account, you do so via Plaid Financial Ltd, an Account Information Service Provider authorised
-            by the UK Financial Conduct Authority (FRN 804718). Your bank login happens on your bank&apos;s own site or app; Plaid
-            then returns to us a read-only access token plus a stream of transactions for the accounts you specifically authorise.
+            Paid events are processed by Stripe Payments UK, Ltd, an FCA-authorised electronic money institution. When
+            you click Pay, you&apos;re redirected to Stripe&apos;s hosted checkout where you enter your card details. Those
+            details never touch GrumpyWhales servers — Stripe handles them under PCI-DSS Level 1 compliance.
           </p>
           <ul className="list-disc pl-6 space-y-1.5">
-            <li>We <strong>only</strong> request the &ldquo;Transactions&rdquo; data product — enough to read incoming credits and match them to your invoices.</li>
-            <li>We <strong>cannot</strong> initiate payments, move money, or change your account settings.</li>
-            <li>You can disconnect a bank at any time from <em>Dashboard → Banking → Disconnect</em>. We will revoke the Plaid access token immediately and delete it within 30 days.</li>
-            <li>Under PSD2/UK Open Banking rules, your consent to share bank data expires every 90 days. You will be asked to re-authorise.</li>
-            <li>Plaid&apos;s own privacy notice is here: <a className="underline" href="https://plaid.com/legal/#end-user-privacy-policy" target="_blank" rel="noopener noreferrer">plaid.com/legal</a>.</li>
+            <li>We receive from Stripe only: a payment intent identifier, the paid amount and currency, and the paid timestamp.</li>
+            <li>Refunds are arranged directly between you and the event host; GrumpyWhales doesn&apos;t hold or move funds.</li>
+            <li>Stripe&apos;s own privacy notice: <a className="underline" href="https://stripe.com/gb/privacy" target="_blank" rel="noopener noreferrer">stripe.com/gb/privacy</a>.</li>
           </ul>
         </Section>
 
@@ -92,7 +90,7 @@ export default function PrivacyPage() {
             <tbody>
               <Proc name="Vercel Inc." purpose="Hosting the application" location="EU / United States (SCC-protected transfer)" />
               <Proc name="Supabase Inc." purpose="Storing accounts, invoices and transactions" location="European Union (Frankfurt region)" />
-              <Proc name="Plaid Financial Ltd." purpose="Open Banking access to your bank" location="United Kingdom / Ireland" />
+              <Proc name="Stripe Payments UK, Ltd." purpose="Card payment processing" location="United Kingdom / United States (SCC-protected transfer)" />
               <Proc name="Resend, Inc." purpose="Delivering invoice and reminder emails" location="European Union" />
               <Proc name="Google LLC" purpose="Optional OAuth sign-in and anonymised analytics" location="United States (SCC-protected transfer)" />
             </tbody>
@@ -106,7 +104,7 @@ export default function PrivacyPage() {
           <ul className="list-disc pl-6 space-y-1.5">
             <li><strong>Account, invoices, clients:</strong> while your account is active. After you close your account, we retain accounting-relevant records for 6 years to comply with UK accounting and tax-record obligations (Companies Act 2006 / HMRC).</li>
             <li><strong>Bank access tokens:</strong> deleted immediately on disconnect; in any case within 30 days.</li>
-            <li><strong>Transaction history (read from Plaid):</strong> kept while the linked bank is connected and for 6 years after closure (same accounting reason as above).</li>
+            <li><strong>Payment records:</strong> the payment intent identifier, amount and timestamp for each paid session, kept for 6 years for UK tax record-keeping.</li>
             <li><strong>Email send logs:</strong> 12 months.</li>
             <li><strong>Server logs (IP, user agent):</strong> 30 days.</li>
           </ul>

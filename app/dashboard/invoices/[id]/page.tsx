@@ -115,9 +115,6 @@ export default async function InvoiceDetail({ params }: { params: Promise<{ id: 
         </div>
       )}
 
-      <div className="mt-8 text-xs" style={{ color: 'var(--color-muted)' }}>
-        Automatic payment tracking arrives once you connect a UK bank in Banking.
-      </div>
     </div>
   );
 }
