@@ -117,7 +117,7 @@ export default async function AttendeesPage({
 
   return (
     <div className="p-8 max-w-6xl">
-      <Link href="/dashboard" className="text-sm mb-4 inline-block" style={{ color: 'var(--color-muted)', textDecoration: 'none' }}>
+      <Link href="/dashboard/events" className="text-sm mb-4 inline-block" style={{ color: 'var(--color-muted)', textDecoration: 'none' }}>
         ← My events
       </Link>
 

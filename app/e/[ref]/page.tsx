@@ -121,7 +121,7 @@ export default async function PublicEventPage({
             </Link>
           )}
           {session ? (
-            <Link href="/dashboard" style={{ color: 'var(--color-muted)' }}>My events →</Link>
+            <Link href="/dashboard/events" style={{ color: 'var(--color-muted)' }}>My events →</Link>
           ) : (
             <Link href={loginRef} style={{ color: 'var(--color-muted)' }}>Sign in</Link>
           )}

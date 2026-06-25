@@ -22,7 +22,7 @@ export default async function EventAdminPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="p-8 max-w-3xl">
-      <Link href="/dashboard" className="text-sm mb-4 inline-block" style={{ color: 'var(--color-muted)', textDecoration: 'none' }}>
+      <Link href="/dashboard/events" className="text-sm mb-4 inline-block" style={{ color: 'var(--color-muted)', textDecoration: 'none' }}>
         ← My events
       </Link>
 
