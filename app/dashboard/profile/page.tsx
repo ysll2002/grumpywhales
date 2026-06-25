@@ -1,10 +1,13 @@
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import ProfileLogoutButton from './ProfileLogoutButton';
+import NameEditor from './NameEditor';
 
 type Profile = {
   id:         string;
   name:       string | null;
+  first_name: string | null;
+  last_name:  string | null;
   email:      string;
   avatar_url: string | null;
   created_at: string;
@@ -28,7 +31,7 @@ export default async function ProfilePage() {
     attendanceTotalRes,
     paidRes,
   ] = await Promise.all([
-    supabase.from('profiles').select('id, name, email, avatar_url, created_at').eq('id', profileId).maybeSingle(),
+    supabase.from('profiles').select('id, name, first_name, last_name, email, avatar_url, created_at').eq('id', profileId).maybeSingle(),
     supabase.from('events').select('id', { head: true, count: 'exact' }).eq('admin_id', profileId),
     supabase.from('event_signups').select('id', { head: true, count: 'exact' }).eq('profile_id', profileId).neq('status', 'cancelled'),
     supabase.from('event_signups').select('id', { head: true, count: 'exact' }).eq('profile_id', profileId).neq('status', 'cancelled').gte('occurrence_date', todayUtc),
@@ -86,15 +89,14 @@ export default async function ProfilePage() {
               (profile.name ?? profile.email)[0].toUpperCase()
             )}
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xl font-semibold mb-0.5" style={{ fontFamily: 'var(--font-display)' }}>
-              {profile.name ?? '—'}
-            </p>
-            <p className="text-sm" style={{ color: 'var(--color-muted)' }}>{profile.email}</p>
-            <p className="text-xs mt-2" style={{ color: 'var(--color-muted)' }}>Member since {memberSince}</p>
-          </div>
-          <div className="flex-shrink-0">
+          <NameEditor
+            initialFirstName={profile.first_name ?? ''}
+            initialLastName={profile.last_name ?? ''}
+            email={profile.email}
+          />
+          <div className="flex-shrink-0 flex flex-col items-end gap-2">
             <ProfileLogoutButton />
+            <p className="text-xs" style={{ color: 'var(--color-muted)' }}>Member since {memberSince}</p>
           </div>
         </div>
       </section>
