@@ -18,7 +18,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <nav className="flex flex-col gap-1 px-2 text-sm">
           {[
             { href: '/dashboard',         label: 'Events' },
-            { href: '/dashboard/banking', label: 'Banking' },
+            { href: '/dashboard/unpaid',  label: 'Unpaid' },
             { href: '/dashboard/profile', label: 'Profile' },
           ].map(item => (
             <Link key={item.href} href={item.href} className="px-3 py-2 rounded-lg hover:bg-[rgba(255,255,255,0.08)]" style={{ color: 'rgba(255,255,255,0.78)' }}>
