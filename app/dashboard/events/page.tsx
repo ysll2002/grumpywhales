@@ -100,14 +100,12 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
             Everything you&apos;re hosting and attending in one place.
           </p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <Link
-            href="/dashboard/events/find"
-            className="px-5 py-2.5 rounded-full text-sm font-medium"
-            style={{ backgroundColor: 'var(--color-card)', color: 'var(--color-fg)', border: '1px solid var(--color-border)', textDecoration: 'none' }}
-          >
-            Find events
-          </Link>
+      </div>
+
+      {/* HOSTING */}
+      <section className="mb-12">
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+          <h2 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)' }}>Hosting</h2>
           <Link
             href="/dashboard/events/new"
             className="px-5 py-2.5 rounded-full text-sm font-medium"
@@ -116,11 +114,6 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
             + New event
           </Link>
         </div>
-      </div>
-
-      {/* HOSTING */}
-      <section className="mb-12">
-        <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>Hosting</h2>
         {hostingEvents.length === 0 ? (
           <div className="p-10 rounded-2xl text-center" style={{ backgroundColor: 'var(--color-card)', border: '1px dashed var(--color-border)' }}>
             <p className="text-base mb-2" style={{ fontFamily: 'var(--font-display)' }}>No events yet</p>
@@ -170,7 +163,16 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
 
       {/* ATTENDING */}
       <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>Attending</h2>
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+          <h2 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)' }}>Attending</h2>
+          <Link
+            href="/dashboard/events/find"
+            className="px-5 py-2.5 rounded-full text-sm font-medium"
+            style={{ backgroundColor: '#2563EB', color: '#FFFFFF', border: 'none', textDecoration: 'none' }}
+          >
+            Find events
+          </Link>
+        </div>
         {upcomingAttending.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
             Nothing on your calendar yet. Open an event link from a host to sign up.
