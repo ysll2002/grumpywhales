@@ -28,12 +28,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const profileId = session.user.profileId;
 
   const body = await req.json().catch(() => ({}));
-  const { data: event } = await supabase
+  const { data: event, error: lookupErr } = await supabase
     .from('events')
     .select('id, status, starts_at, recurrence, signup_mode, capacity, fee_amount, cancelled_dates')
     .eq('id', id)
     .maybeSingle();
-  if (!event) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (lookupErr) {
+    console.error('[signup POST] event lookup failed', { id, lookupErr });
+    return NextResponse.json({ error: 'event_lookup_failed', detail: lookupErr.message }, { status: 500 });
+  }
+  if (!event) {
+    console.error('[signup POST] event not found', { id });
+    return NextResponse.json({ error: 'event_not_found', detail: `id=${id}` }, { status: 404 });
+  }
 
   if (event.status !== 'published') {
     return NextResponse.json({ error: 'event_not_open' }, { status: 409 });
