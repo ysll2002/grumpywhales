@@ -30,10 +30,14 @@ export default async function UnpaidPage() {
     .neq('status', 'cancelled')
     .order('occurrence_date', { ascending: true });
 
-  // Drop rows where the host cancelled that specific session — no payment owed.
+  // Drop rows where:
+  //   - the host cancelled that specific session (no payment owed), or
+  //   - the host hasn't published this session's final list yet (payment
+  //     isn't 'due' until the host says so).
   const rows = ((data ?? []) as unknown as UnpaidRow[])
     .filter(r => r.events)
     .filter(r => !(r.events!.cancelled_dates ?? []).includes(r.occurrence_date))
+    .filter(r => (r.events!.published_occurrence_dates ?? []).includes(r.occurrence_date))
     .map(r => ({
       row: r,
       iso: occurrenceIso(r.events!.starts_at, r.occurrence_date),

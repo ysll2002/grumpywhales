@@ -328,8 +328,15 @@ function AttendingCard({
         ) : signup ? (
           <>
             <Badge tone={STATUS_BADGE[signup.status]}>{SIGNUP_STATUS_LABELS[signup.status]}</Badge>
+            {/* Suppress the 'UNPAID / payment due' badge until the host
+                publishes this session's final list. PAID still shows
+                immediately so the attendee sees their payment landed. */}
             {Number(event.fee_amount) > 0 && (
-              <Badge tone={PAYMENT_BADGE[signup.payment_status]}>{PAYMENT_STATUS_LABELS[signup.payment_status]}</Badge>
+              signup.payment_status === 'paid'
+                ? <Badge tone={PAYMENT_BADGE.paid}>{PAYMENT_STATUS_LABELS.paid}</Badge>
+                : (event.published_occurrence_dates ?? []).includes(occurrenceDate)
+                  ? <Badge tone={PAYMENT_BADGE[signup.payment_status]}>{PAYMENT_STATUS_LABELS[signup.payment_status]}</Badge>
+                  : null
             )}
           </>
         ) : opensAtIso ? (
