@@ -112,8 +112,16 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
     })
     .filter(r => !mySignupKeys.has(r.key));
 
-  const orderedAttending = [...myRows, ...discoveryRows]
+  const allAttending = [...myRows, ...discoveryRows];
+  // Upcoming = anything still ahead of now, ascending (soonest first).
+  // Past = anything before now, descending (most recent first). Discovery
+  // rows are always future so the past list only contains your own signups.
+  const upcomingEvents = allAttending
+    .filter(r => new Date(r.iso).getTime() >= now)
     .sort((a, b) => new Date(a.iso).getTime() - new Date(b.iso).getTime());
+  const pastEvents = allAttending
+    .filter(r => new Date(r.iso).getTime() <  now)
+    .sort((a, b) => new Date(b.iso).getTime() - new Date(a.iso).getTime());
 
   return (
     <div className="p-8 max-w-5xl">
@@ -207,51 +215,26 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
 
       )}
 
-      {/* ATTENDING */}
-      <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>Attending</h2>
-        {orderedAttending.length === 0 ? (
-          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-            No upcoming sessions on the platform yet.
-          </p>
+      {/* UPCOMING EVENTS */}
+      <section className="mb-12">
+        <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>Upcoming events</h2>
+        {upcomingEvents.length === 0 ? (
+          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>No upcoming sessions on the platform yet.</p>
         ) : (
           <div className="grid gap-3">
-            {orderedAttending.map(({ key, event, iso, cancelled, signup }) => (
-              <Link key={key} href={`/e/${event.payment_reference}`}
-                className="p-5 rounded-2xl flex items-start justify-between gap-4"
-                style={{
-                  backgroundColor: cancelled ? '#FAFAFA' : 'var(--color-card)',
-                  border:          '1px solid var(--color-border)',
-                  textDecoration:  'none', color: 'var(--color-fg)',
-                  opacity:         cancelled ? 0.75 : 1,
-                }}>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-base font-semibold truncate" style={{ fontFamily: 'var(--font-display)', textDecoration: cancelled ? 'line-through' : undefined }}>
-                      {event.title}
-                    </span>
-                    {cancelled ? (
-                      <Badge tone={{ bg: '#FEE2E2', fg: 'var(--color-red)' }}>Cancelled by host</Badge>
-                    ) : signup ? (
-                      <>
-                        <Badge tone={STATUS_BADGE[signup.status]}>{SIGNUP_STATUS_LABELS[signup.status]}</Badge>
-                        {Number(event.fee_amount) > 0 && (
-                          <Badge tone={PAYMENT_BADGE[signup.payment_status]}>{PAYMENT_STATUS_LABELS[signup.payment_status]}</Badge>
-                        )}
-                      </>
-                    ) : (
-                      <Badge tone={{ bg: '#DBEAFE', fg: '#1D4ED8' }}>Open to join</Badge>
-                    )}
-                  </div>
-                  <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-                    {formatEventDateTime(iso)}{event.location ? ` · ${event.location}` : ''}
-                  </p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-xl font-semibold">{Number(event.fee_amount) > 0 ? formatMoney(event.fee_amount, event.fee_currency) : 'Free'}</p>
-                </div>
-              </Link>
-            ))}
+            {upcomingEvents.map(({ key, ...item }) => <AttendingCard key={key} {...item} />)}
+          </div>
+        )}
+      </section>
+
+      {/* PAST EVENTS */}
+      <section className="mb-8">
+        <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>Past events</h2>
+        {pastEvents.length === 0 ? (
+          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>You haven&apos;t attended any sessions yet.</p>
+        ) : (
+          <div className="grid gap-3">
+            {pastEvents.map(({ key, ...item }) => <AttendingCard key={key} {...item} past />)}
           </div>
         )}
       </section>
@@ -265,5 +248,52 @@ function Badge({ tone, children }: { tone: { bg: string; fg: string }; children:
       style={{ backgroundColor: tone.bg, color: tone.fg }}>
       {children}
     </span>
+  );
+}
+
+function AttendingCard({
+  event, iso, cancelled, signup, past = false,
+}: {
+  event:     Event;
+  iso:       string;
+  cancelled: boolean;
+  signup:    { id: string; status: SignupStatus; payment_status: PaymentStatus } | null;
+  past?:     boolean;
+}) {
+  return (
+    <Link href={`/e/${event.payment_reference}`}
+      className="p-5 rounded-2xl flex items-start justify-between gap-4"
+      style={{
+        backgroundColor: cancelled || past ? '#FAFAFA' : 'var(--color-card)',
+        border:          '1px solid var(--color-border)',
+        textDecoration:  'none', color: 'var(--color-fg)',
+        opacity:         cancelled ? 0.75 : past ? 0.85 : 1,
+      }}>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <span className="text-base font-semibold truncate" style={{ fontFamily: 'var(--font-display)', textDecoration: cancelled ? 'line-through' : undefined }}>
+            {event.title}
+          </span>
+          {cancelled ? (
+            <Badge tone={{ bg: '#FEE2E2', fg: 'var(--color-red)' }}>Cancelled by host</Badge>
+          ) : signup ? (
+            <>
+              <Badge tone={STATUS_BADGE[signup.status]}>{SIGNUP_STATUS_LABELS[signup.status]}</Badge>
+              {Number(event.fee_amount) > 0 && (
+                <Badge tone={PAYMENT_BADGE[signup.payment_status]}>{PAYMENT_STATUS_LABELS[signup.payment_status]}</Badge>
+              )}
+            </>
+          ) : (
+            <Badge tone={{ bg: '#DBEAFE', fg: '#1D4ED8' }}>Open to join</Badge>
+          )}
+        </div>
+        <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
+          {formatEventDateTime(iso)}{event.location ? ` · ${event.location}` : ''}
+        </p>
+      </div>
+      <div className="text-right flex-shrink-0">
+        <p className="text-xl font-semibold">{Number(event.fee_amount) > 0 ? formatMoney(event.fee_amount, event.fee_currency) : 'Free'}</p>
+      </div>
+    </Link>
   );
 }
