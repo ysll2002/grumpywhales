@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import Link from 'next/link';
-import { formatEventDateTime, formatMoney, computeNextOccurrences, type Event } from '@/lib/events';
+import { formatEventDateTime, formatMoney, computeNextOccurrences, signupOpenInfo, type Event } from '@/lib/events';
 import { SIGNUP_STATUS_LABELS, PAYMENT_STATUS_LABELS, type SignupStatus, type PaymentStatus } from '@/lib/signups';
 import { isPlatformAdmin } from '@/lib/platform-admin';
 
@@ -113,13 +113,40 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
     .filter(r => !mySignupKeys.has(r.key));
 
   const allAttending = [...myRows, ...discoveryRows];
+
+  // Fetch accepted counts for every (event_id, occurrence_date) we'll show.
+  // One pass: pull all accepted signups for the involved events, then bucket.
+  const involvedEventIds = Array.from(new Set(allAttending.map(r => r.event.id)));
+  const acceptedByKey = new Map<string, number>();
+  if (involvedEventIds.length > 0) {
+    const { data: acceptedRows } = await supabase
+      .from('event_signups')
+      .select('event_id, occurrence_date')
+      .in('event_id', involvedEventIds)
+      .eq('status', 'accepted');
+    for (const r of (acceptedRows ?? []) as { event_id: string; occurrence_date: string }[]) {
+      const k = `${r.event_id}:${r.occurrence_date}`;
+      acceptedByKey.set(k, (acceptedByKey.get(k) ?? 0) + 1);
+    }
+  }
+
+  // Materialise extra metadata each card needs (counts + sign-up window).
+  const enriched = allAttending.map(r => {
+    const openInfo = signupOpenInfo(r.event, r.iso);
+    return {
+      ...r,
+      accepted: acceptedByKey.get(r.key) ?? 0,
+      opensAtIso: openInfo.open ? null : openInfo.opensAt.toISOString(),
+    };
+  });
+
   // Upcoming = anything still ahead of now, ascending (soonest first).
   // Past = anything before now, descending (most recent first). Discovery
   // rows are always future so the past list only contains your own signups.
-  const upcomingEvents = allAttending
+  const upcomingEvents = enriched
     .filter(r => new Date(r.iso).getTime() >= now)
     .sort((a, b) => new Date(a.iso).getTime() - new Date(b.iso).getTime());
-  const pastEvents = allAttending
+  const pastEvents = enriched
     .filter(r => new Date(r.iso).getTime() <  now)
     .sort((a, b) => new Date(b.iso).getTime() - new Date(a.iso).getTime());
 
@@ -252,17 +279,24 @@ function Badge({ tone, children }: { tone: { bg: string; fg: string }; children:
 }
 
 function AttendingCard({
-  event, iso, cancelled, signup, past = false,
+  event, iso, cancelled, signup, accepted, opensAtIso, past = false,
 }: {
-  event:     Event;
-  iso:       string;
-  cancelled: boolean;
-  signup:    { id: string; status: SignupStatus; payment_status: PaymentStatus } | null;
-  past?:     boolean;
+  event:      Event;
+  iso:        string;
+  cancelled:  boolean;
+  signup:     { id: string; status: SignupStatus; payment_status: PaymentStatus } | null;
+  accepted:   number;
+  opensAtIso: string | null;
+  past?:      boolean;
 }) {
+  const dateLine = formatEventDateTime(iso).toUpperCase();
+  const capacityLine = event.capacity != null
+    ? `${accepted} / ${event.capacity} on the list`
+    : `${accepted} signed up`;
+
   return (
     <Link href={`/e/${event.payment_reference}`}
-      className="p-5 rounded-2xl flex items-start justify-between gap-4"
+      className="p-5 rounded-2xl flex items-start justify-between gap-4 flex-wrap"
       style={{
         backgroundColor: cancelled || past ? '#FAFAFA' : 'var(--color-card)',
         border:          '1px solid var(--color-border)',
@@ -270,29 +304,45 @@ function AttendingCard({
         opacity:         cancelled ? 0.75 : past ? 0.85 : 1,
       }}>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <span className="text-base font-semibold truncate" style={{ fontFamily: 'var(--font-display)', textDecoration: cancelled ? 'line-through' : undefined }}>
-            {event.title}
-          </span>
-          {cancelled ? (
-            <Badge tone={{ bg: '#FEE2E2', fg: 'var(--color-red)' }}>Cancelled by host</Badge>
-          ) : signup ? (
-            <>
-              <Badge tone={STATUS_BADGE[signup.status]}>{SIGNUP_STATUS_LABELS[signup.status]}</Badge>
-              {Number(event.fee_amount) > 0 && (
-                <Badge tone={PAYMENT_BADGE[signup.payment_status]}>{PAYMENT_STATUS_LABELS[signup.payment_status]}</Badge>
-              )}
-            </>
-          ) : (
-            <Badge tone={{ bg: '#DBEAFE', fg: '#1D4ED8' }}>Open to join</Badge>
-          )}
-        </div>
-        <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-          {formatEventDateTime(iso)}{event.location ? ` · ${event.location}` : ''}
+        <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--color-muted)' }}>
+          {event.title}{event.location ? ` · ${event.location}` : ''}
+        </p>
+        <p className="text-base sm:text-lg font-bold leading-tight" style={{ fontFamily: 'var(--font-display)', textDecoration: cancelled ? 'line-through' : undefined }}>
+          {dateLine}
+        </p>
+        <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>
+          {cancelled ? 'Sign-ups closed' : capacityLine}
         </p>
       </div>
-      <div className="text-right flex-shrink-0">
-        <p className="text-xl font-semibold">{Number(event.fee_amount) > 0 ? formatMoney(event.fee_amount, event.fee_currency) : 'Free'}</p>
+
+      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+        {cancelled ? (
+          <Badge tone={{ bg: '#FEE2E2', fg: 'var(--color-red)' }}>Cancelled by host</Badge>
+        ) : signup ? (
+          <>
+            <Badge tone={STATUS_BADGE[signup.status]}>{SIGNUP_STATUS_LABELS[signup.status]}</Badge>
+            {Number(event.fee_amount) > 0 && (
+              <Badge tone={PAYMENT_BADGE[signup.payment_status]}>{PAYMENT_STATUS_LABELS[signup.payment_status]}</Badge>
+            )}
+          </>
+        ) : opensAtIso ? (
+          <>
+            <Badge tone={{ bg: '#FFF4B8', fg: '#7C5800' }}>
+              Sign-ups open {new Date(opensAtIso).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+            </Badge>
+            <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
+              Status will change to “Open for sign-up” at that time.
+            </p>
+          </>
+        ) : (
+          <span className="px-4 py-2 rounded-full text-sm font-medium"
+            style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
+            {event.signup_mode === 'curated' ? 'Request to attend' : 'Sign me up'}
+          </span>
+        )}
+        <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>
+          {Number(event.fee_amount) > 0 ? `${formatMoney(event.fee_amount, event.fee_currency)} per session` : 'Free'}
+        </p>
       </div>
     </Link>
   );
