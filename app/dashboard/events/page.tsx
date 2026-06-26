@@ -3,6 +3,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import Link from 'next/link';
 import { formatEventDateTime, formatMoney, computeNextOccurrences, signupOpenInfo, type Event } from '@/lib/events';
 import AttendRequestButton from './AttendRequestButton';
+import CancelSignupButton from './CancelSignupButton';
 import { SIGNUP_STATUS_LABELS, PAYMENT_STATUS_LABELS, type SignupStatus, type PaymentStatus } from '@/lib/signups';
 
 // Each session is an independently joinable card. Cap the number of
@@ -242,6 +243,11 @@ function AttendingCard({
                 : (event.published_occurrence_dates ?? []).includes(occurrenceDate)
                   ? <Badge tone={PAYMENT_BADGE[signup.payment_status]}>{PAYMENT_STATUS_LABELS[signup.payment_status]}</Badge>
                   : null
+            )}
+            {/* Cancel only makes sense on future sessions the user is still
+                holding (declined / cancelled signups have no live commitment). */}
+            {!past && signup.status !== 'cancelled' && signup.status !== 'declined' && (
+              <CancelSignupButton eventId={event.id} occurrenceDate={occurrenceDate} />
             )}
           </>
         ) : opensAtIso ? (
