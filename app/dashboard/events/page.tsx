@@ -179,16 +179,7 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
 
       {/* ATTENDING */}
       <section className="mb-8">
-        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-          <h2 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)' }}>Attending</h2>
-          <Link
-            href="/dashboard/events/find"
-            className="px-5 py-2.5 rounded-full text-sm font-medium"
-            style={{ backgroundColor: '#2563EB', color: '#FFFFFF', border: 'none', textDecoration: 'none' }}
-          >
-            Find events
-          </Link>
-        </div>
+        <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>Attending</h2>
         {orderedAttending.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
             Nothing on your calendar yet. Open an event link from a host to sign up.
