@@ -76,8 +76,14 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
       row: r,
       iso: occurrenceIso(r.events!.starts_at, r.occurrence_date),
       cancelled: (r.events!.cancelled_dates ?? []).includes(r.occurrence_date),
+      past: new Date(occurrenceIso(r.events!.starts_at, r.occurrence_date)).getTime() < now,
     }));
-  const upcomingAttending = attending.filter(r => new Date(r.iso).getTime() >= now);
+  // Upcoming sessions first (soonest at the top), then past sessions
+  // (most recent at the top), so the next event you need to think about
+  // is always the first card.
+  const upcomingAttending = attending.filter(r => !r.past);
+  const pastAttending     = attending.filter(r =>  r.past).reverse();
+  const orderedAttending  = [...upcomingAttending, ...pastAttending];
 
   return (
     <div className="p-8 max-w-5xl">
@@ -183,20 +189,20 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
             Find events
           </Link>
         </div>
-        {upcomingAttending.length === 0 ? (
+        {orderedAttending.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
             Nothing on your calendar yet. Open an event link from a host to sign up.
           </p>
         ) : (
           <div className="grid gap-3">
-            {upcomingAttending.map(({ row, iso, cancelled }) => row.events && (
+            {orderedAttending.map(({ row, iso, cancelled, past }) => row.events && (
               <Link key={row.id} href={`/e/${row.events.payment_reference}`}
                 className="p-5 rounded-2xl flex items-start justify-between gap-4"
                 style={{
-                  backgroundColor: cancelled ? '#FAFAFA' : 'var(--color-card)',
+                  backgroundColor: cancelled || past ? '#FAFAFA' : 'var(--color-card)',
                   border:          '1px solid var(--color-border)',
                   textDecoration:  'none', color: 'var(--color-fg)',
-                  opacity:         cancelled ? 0.75 : 1,
+                  opacity:         cancelled ? 0.75 : past ? 0.7 : 1,
                 }}>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -207,6 +213,7 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
                       <Badge tone={{ bg: '#FEE2E2', fg: 'var(--color-red)' }}>Cancelled by host</Badge>
                     ) : (
                       <>
+                        {past && <Badge tone={{ bg: '#E5E7EB', fg: '#374151' }}>Past</Badge>}
                         <Badge tone={STATUS_BADGE[row.status]}>{SIGNUP_STATUS_LABELS[row.status]}</Badge>
                         {Number(row.events.fee_amount) > 0 && (
                           <Badge tone={PAYMENT_BADGE[row.payment_status]}>{PAYMENT_STATUS_LABELS[row.payment_status]}</Badge>
