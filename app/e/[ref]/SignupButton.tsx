@@ -156,7 +156,7 @@ export default function SignupButton({
         {currentStatus === 'waitlisted' && (
           <p className="text-xs" style={{ color: 'var(--color-muted)' }}>You&apos;ll be promoted if someone drops out.</p>
         )}
-        {paymentStatus === 'unpaid' && hasFee && (
+        {paymentStatus === 'unpaid' && hasFee && listPublished && (
           <button
             onClick={payNow}
             disabled={payBusy}
@@ -165,6 +165,11 @@ export default function SignupButton({
           >
             {payBusy ? 'Redirecting…' : `Pay ${feeLabel}`}
           </button>
+        )}
+        {paymentStatus === 'unpaid' && hasFee && !listPublished && (
+          <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
+            Payment opens once the host publishes the final list.
+          </p>
         )}
         <button
           onClick={cancel}
