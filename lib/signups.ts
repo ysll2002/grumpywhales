@@ -22,7 +22,7 @@ export type EventSignup = {
 
 export const SIGNUP_STATUS_LABELS: Record<SignupStatus, string> = {
   accepted:   "You're in",
-  pending:    'Awaiting host',
+  pending:    'Awaiting admin to publish final list',
   waitlisted: 'Waitlist',
   declined:   'Not selected',
   cancelled:  'Cancelled',
