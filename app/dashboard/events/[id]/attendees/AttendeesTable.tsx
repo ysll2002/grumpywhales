@@ -177,6 +177,20 @@ export default function AttendeesTable({
     }
   }
 
+  async function removeSignup(signupId: string, name: string | null) {
+    const who = name ?? 'this attendee';
+    if (!confirm(`Remove ${who} from this session? They'll disappear from the list and won't see this session in their dashboard.`)) return;
+    const prev = rows;
+    setRows(rs => rs.filter(r => r.signup_id !== signupId));
+    setError('');
+    const res = await fetch(`/api/events/${eventId}/signups/${signupId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setRows(prev);
+      setError(j.detail ?? j.error ?? 'remove_failed');
+    }
+  }
+
   async function swap(idx: number, direction: -1 | 1) {
     const other = idx + direction;
     if (other < 0 || other >= rows.length) return;
@@ -299,6 +313,7 @@ export default function AttendeesTable({
               <Th title="Lifetime attendance for this event">Lifetime</Th>
               {eventStarted && <Th title="Did they attend on this event's date?">Attended</Th>}
               <Th>Order</Th>
+              <Th>{' '}</Th>
             </tr>
           </thead>
           <tbody>
@@ -357,10 +372,22 @@ export default function AttendeesTable({
                       className="px-2 py-0.5 text-xs rounded disabled:opacity-30" style={{ background: 'transparent', border: '1px solid var(--color-border)', cursor: 'pointer' }}>↓</button>
                   </div>
                 </Td>
+                <Td>
+                  <button
+                    type="button"
+                    onClick={() => removeSignup(r.signup_id, r.name)}
+                    disabled={r.payment_status === 'paid'}
+                    title={r.payment_status === 'paid' ? 'Attendee paid — refund in Stripe first, then change status to Cancelled.' : 'Remove from this session'}
+                    className="text-xs disabled:opacity-30"
+                    style={{ color: 'var(--color-red)', background: 'none', border: 'none', cursor: r.payment_status === 'paid' ? 'not-allowed' : 'pointer' }}
+                  >
+                    Remove
+                  </button>
+                </Td>
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={eventStarted ? 9 : 8} className="p-8 text-center text-sm" style={{ color: 'var(--color-muted)' }}>No-one has signed up yet.</td></tr>
+              <tr><td colSpan={eventStarted ? 10 : 9} className="p-8 text-center text-sm" style={{ color: 'var(--color-muted)' }}>No-one has signed up yet.</td></tr>
             )}
           </tbody>
         </table>
