@@ -5,7 +5,6 @@ import { useState } from 'react';
 export type AdminRow = {
   email:      string;
   created_at: string | null;
-  founder:    boolean;
 };
 
 export default function AdminsManager({ initial }: { initial: AdminRow[] }) {
@@ -32,7 +31,7 @@ export default function AdminsManager({ initial }: { initial: AdminRow[] }) {
       return;
     }
     if (!rows.some(r => r.email.toLowerCase() === trimmed)) {
-      setRows([...rows, { email: trimmed, created_at: new Date().toISOString(), founder: false }]);
+      setRows([...rows, { email: trimmed, created_at: new Date().toISOString() }]);
     }
     setEmail('');
     setInfo(`${trimmed} can now host events.`);
@@ -105,15 +104,15 @@ export default function AdminsManager({ initial }: { initial: AdminRow[] }) {
                     : '—'}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  {!r.founder && (
-                    <button
-                      type="button" onClick={() => remove(r.email)}
-                      className="text-xs"
-                      style={{ color: 'var(--color-red)', background: 'none', border: 'none', cursor: 'pointer' }}
-                    >
-                      Remove
-                    </button>
-                  )}
+                  <button
+                    type="button" onClick={() => remove(r.email)}
+                    disabled={rows.length <= 1}
+                    className="text-xs disabled:opacity-30"
+                    style={{ color: 'var(--color-red)', background: 'none', border: 'none', cursor: rows.length <= 1 ? 'not-allowed' : 'pointer' }}
+                    title={rows.length <= 1 ? 'At least one admin must remain' : undefined}
+                  >
+                    Remove
+                  </button>
                 </td>
               </tr>
             ))}

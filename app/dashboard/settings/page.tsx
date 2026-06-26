@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { auth } from '@/auth';
-import { isPlatformAdmin, listPlatformAdmins, FOUNDING_ADMIN_EMAIL } from '@/lib/platform-admin';
+import { isPlatformAdmin, listPlatformAdmins } from '@/lib/platform-admin';
 import AdminsManager, { type AdminRow } from './AdminsManager';
 
 export default async function SettingsPage() {
@@ -11,7 +11,6 @@ export default async function SettingsPage() {
   const rows: AdminRow[] = admins.map(a => ({
     email:      a.email,
     created_at: a.created_at,
-    founder:    a.email.toLowerCase() === FOUNDING_ADMIN_EMAIL,
   }));
 
   return (
