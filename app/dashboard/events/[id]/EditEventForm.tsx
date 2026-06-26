@@ -100,11 +100,33 @@ export default function EditEventForm({ event }: { event: Event }) {
   };
 
   const remove = async () => {
-    if (!confirm('Delete this event permanently? Anyone you sent the link to will no longer find it.')) return;
+    setError('');
     setDeleting(true);
+
+    // Preflight: block deletion if any attendee still owes money so the host
+    // doesn't accidentally erase the payment record.
+    const preflight = await fetch(`/api/events/${event.id}/can-delete`);
+    const preflightJson = await preflight.json().catch(() => ({})) as { ok?: boolean; unpaid_count?: number };
+    if (!preflight.ok || !preflightJson.ok) {
+      setDeleting(false);
+      const n = preflightJson.unpaid_count ?? 0;
+      alert(
+        n > 0
+          ? `Can't delete this event: ${n} attendee${n === 1 ? '' : 's'} still ha${n === 1 ? 's' : 've'} an unpaid sign-up. Refund or cancel those sign-ups first.`
+          : `Can't delete this event right now.`
+      );
+      return;
+    }
+
+    if (!confirm('Delete this event permanently? Anyone you sent the link to will no longer find it.')) {
+      setDeleting(false);
+      return;
+    }
+
     const res = await fetch(`/api/events/${event.id}`, { method: 'DELETE' });
     if (!res.ok) {
-      setError('delete_failed');
+      const j = await res.json().catch(() => ({}));
+      setError(j.detail ?? j.error ?? 'delete_failed');
       setDeleting(false);
       return;
     }
@@ -233,8 +255,8 @@ export default function EditEventForm({ event }: { event: Event }) {
           type="button"
           onClick={remove}
           disabled={deleting}
-          className="text-sm"
-          style={{ color: 'var(--color-red)', background: 'none', border: 'none', cursor: deleting ? 'not-allowed' : 'pointer' }}
+          className="px-5 py-2.5 rounded-full text-sm font-medium disabled:opacity-50"
+          style={{ backgroundColor: 'var(--color-red)', color: '#FFFFFF', border: 'none', cursor: deleting ? 'wait' : 'pointer' }}
         >
           {deleting ? 'Deleting…' : 'Delete event'}
         </button>

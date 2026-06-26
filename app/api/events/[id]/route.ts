@@ -167,6 +167,24 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!(await isEventAdmin(id, session.user.profileId))) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
   }
+
+  // Refuse deletion while any attendee still owes money — otherwise the host
+  // loses their record of who paid what and the unpaid attendee loses the
+  // page they were meant to pay from.
+  const { count: unpaid_count } = await supabase
+    .from('event_signups')
+    .select('id', { head: true, count: 'exact' })
+    .eq('event_id', id)
+    .eq('payment_status', 'unpaid')
+    .neq('status', 'cancelled');
+  if ((unpaid_count ?? 0) > 0) {
+    return NextResponse.json({
+      error:        'has_unpaid_signups',
+      unpaid_count,
+      detail:       `${unpaid_count} attendee(s) still have unpaid sign-ups.`,
+    }, { status: 409 });
+  }
+
   const { error } = await supabase
     .from('events')
     .delete()
