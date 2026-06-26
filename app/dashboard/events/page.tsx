@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { formatEventDateTime, formatMoney, computeNextOccurrences, signupOpenInfo, type Event } from '@/lib/events';
 import AttendRequestButton from './AttendRequestButton';
 import CancelSignupButton from './CancelSignupButton';
+import PayButton from '../unpaid/PayButton';
 import { stripe } from '@/lib/stripe';
 
 // Resolve a paid=1 redirect from Stripe: load the session, confirm it's paid,
@@ -274,26 +275,44 @@ function AttendingCard({
       <div className="flex flex-col items-end gap-1 flex-shrink-0">
         {cancelled ? (
           <Badge tone={{ bg: '#FEE2E2', fg: 'var(--color-red)' }}>Cancelled by host</Badge>
-        ) : signup ? (
-          <>
-            <Badge tone={STATUS_BADGE[signup.status]}>{SIGNUP_STATUS_LABELS[signup.status]}</Badge>
-            {/* Suppress the 'UNPAID / payment due' badge until the host
-                publishes this session's final list. PAID still shows
-                immediately so the attendee sees their payment landed. */}
-            {Number(event.fee_amount) > 0 && (
-              signup.payment_status === 'paid'
-                ? <Badge tone={PAYMENT_BADGE.paid}>{PAYMENT_STATUS_LABELS.paid}</Badge>
-                : (event.published_occurrence_dates ?? []).includes(occurrenceDate)
-                  ? <Badge tone={PAYMENT_BADGE[signup.payment_status]}>{PAYMENT_STATUS_LABELS[signup.payment_status]}</Badge>
-                  : null
-            )}
-            {/* Cancel only makes sense on future sessions the user is still
-                holding (declined / cancelled signups have no live commitment). */}
-            {!past && signup.status !== 'cancelled' && signup.status !== 'declined' && (
-              <CancelSignupButton eventId={event.id} occurrenceDate={occurrenceDate} />
-            )}
-          </>
-        ) : opensAtIso ? (
+        ) : signup ? (() => {
+          const sessionPublished = (event.published_occurrence_dates ?? []).includes(occurrenceDate);
+          const showPayBadge =
+            Number(event.fee_amount) > 0 && (signup.payment_status === 'paid' || sessionPublished);
+          const showPayButton =
+            !past &&
+            Number(event.fee_amount) > 0 &&
+            signup.payment_status === 'unpaid' &&
+            sessionPublished;
+          const showCancel =
+            !past && signup.status !== 'cancelled' && signup.status !== 'declined';
+
+          return (
+            <>
+              <Badge tone={STATUS_BADGE[signup.status]}>{SIGNUP_STATUS_LABELS[signup.status]}</Badge>
+              {/* Suppress the 'UNPAID / payment due' badge until the host
+                  publishes this session's final list. PAID still shows
+                  immediately so the attendee sees their payment landed. */}
+              {showPayBadge && (
+                <Badge tone={PAYMENT_BADGE[signup.payment_status]}>{PAYMENT_STATUS_LABELS[signup.payment_status]}</Badge>
+              )}
+              {/* Once the host has published, the attendee can pay right
+                  from the dashboard card — no detour through Unpaid. */}
+              {showPayButton && (
+                <PayButton
+                  eventId={event.id}
+                  occurrenceDate={occurrenceDate}
+                  feeLabel={formatMoney(event.fee_amount, event.fee_currency)}
+                />
+              )}
+              {/* Cancel only makes sense on future sessions the user is still
+                  holding (declined / cancelled signups have no live commitment). */}
+              {showCancel && (
+                <CancelSignupButton eventId={event.id} occurrenceDate={occurrenceDate} />
+              )}
+            </>
+          );
+        })() : opensAtIso ? (
           <>
             <Badge tone={{ bg: '#FFF4B8', fg: '#7C5800' }}>
               Sign-ups open {new Date(opensAtIso).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
