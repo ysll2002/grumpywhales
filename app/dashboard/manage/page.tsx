@@ -37,14 +37,11 @@ export default async function ManageEventsPage({ searchParams }: { searchParams:
         <div className="rounded-2xl px-5 py-4 mb-6"
           style={{ backgroundColor: '#D1FAE5', border: '1px solid #A7F3D0' }}>
           <p className="text-sm mb-2" style={{ color: 'var(--color-accent-dk)' }}>
-            ✓ <strong>&ldquo;{justCreated.title}&rdquo; is live.</strong> Share this link to start collecting sign-ups:
+            ✓ <strong>&ldquo;{justCreated.title}&rdquo; is live.</strong> Attendees will see it on their <em>Join event</em> page.
           </p>
           <div className="flex items-center gap-3 flex-wrap">
-            <code className="text-sm font-medium" style={{ color: 'var(--color-accent-dk)' }}>
-              grumpywhales.com/e/{justCreated.payment_reference}
-            </code>
-            <Link href={`/e/${justCreated.payment_reference}`} target="_blank" className="text-sm font-medium" style={{ color: 'var(--color-accent-dk)' }}>
-              Open ↗
+            <Link href={`/dashboard/events/${justCreated.id}/attendees`} className="text-sm font-medium" style={{ color: 'var(--color-accent-dk)' }}>
+              Open attendees →
             </Link>
             <Link href={`/dashboard/events/${justCreated.id}`} className="text-sm font-medium" style={{ color: 'var(--color-accent-dk)' }}>
               Edit settings →

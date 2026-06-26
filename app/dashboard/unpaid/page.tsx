@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { formatEventDateTime, formatMoney, type Event } from '@/lib/events';
@@ -109,16 +108,14 @@ function Section({ title, items, muted }:
               border: '1px solid var(--color-border)',
               opacity: muted ? 0.75 : 1,
             }}>
-            <Link href={`/e/${row.events.payment_reference}`}
-              className="min-w-0 flex-1 block"
-              style={{ textDecoration: 'none', color: 'inherit' }}>
+            <div className="min-w-0 flex-1">
               <p className="text-base font-semibold truncate mb-1" style={{ fontFamily: 'var(--font-display)' }}>
                 {row.events.title}
               </p>
               <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
                 {formatEventDateTime(iso)}{row.events.location ? ` · ${row.events.location}` : ''}
               </p>
-            </Link>
+            </div>
             <div className="flex items-center gap-4 flex-shrink-0">
               <p className="text-xl font-semibold">
                 {formatMoney(row.events.fee_amount, row.events.fee_currency)}

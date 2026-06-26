@@ -83,21 +83,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'already_signed_up', signup: existing }, { status: 409 });
   }
 
-  // Decide status based on mode + per-occurrence capacity.
-  let status: SignupStatus;
-  if (event.signup_mode === 'curated') {
-    status = 'pending';
-  } else if (event.capacity != null) {
-    const { count } = await supabase
-      .from('event_signups')
-      .select('id', { head: true, count: 'exact' })
-      .eq('event_id', id)
-      .eq('occurrence_date', occDate)
-      .eq('status', 'accepted');
-    status = (count ?? 0) >= event.capacity ? 'waitlisted' : 'accepted';
-  } else {
-    status = 'accepted';
-  }
+  // Capacity is an indicative target, not a hard cap — first-come signups
+  // are always accepted; curated ones still wait for the host to publish.
+  const status: SignupStatus = event.signup_mode === 'curated' ? 'pending' : 'accepted';
 
   const payment_status: PaymentStatus = Number(event.fee_amount) > 0 ? 'unpaid' : 'free';
 

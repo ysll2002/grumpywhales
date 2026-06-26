@@ -48,7 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const signups = (signupRows ?? []) as unknown as SignupForEmail[];
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://grumpywhales.com';
-  const eventUrl = `${baseUrl}/e/${event.payment_reference}`;
+  const eventUrl = `${baseUrl}/dashboard/events`;
 
   // Compute the actual start ISO for THIS occurrence (event.starts_at gives
   // time-of-day; occurrence_date overrides the date).

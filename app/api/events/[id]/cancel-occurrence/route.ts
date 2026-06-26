@@ -61,7 +61,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const hostName = host?.name ?? null;
 
   const baseUrl  = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://grumpywhales.com';
-  const eventUrl = `${baseUrl}/e/${event.payment_reference}`;
+  const eventUrl = `${baseUrl}/dashboard/events`;
 
   // Build the occurrence ISO from the requested date + event time-of-day.
   const seriesStart = new Date(event.starts_at);

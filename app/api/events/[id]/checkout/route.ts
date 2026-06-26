@@ -48,9 +48,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   // Build URLs. Stripe replaces {CHECKOUT_SESSION_ID} in the success URL.
+  // Both redirects land on /dashboard/events; the success path carries the
+  // session id so the dashboard can sync-verify the payment without waiting
+  // for the webhook to land.
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://grumpywhales.com';
-  const successUrl = `${baseUrl}/e/${event.payment_reference}?paid=1&occurrence=${body.occurrence_date}&session_id={CHECKOUT_SESSION_ID}`;
-  const cancelUrl  = `${baseUrl}/e/${event.payment_reference}?paid=0&occurrence=${body.occurrence_date}`;
+  const successUrl = `${baseUrl}/dashboard/events?paid=1&session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl  = `${baseUrl}/dashboard/events?paid=0`;
 
   let checkoutSession;
   try {

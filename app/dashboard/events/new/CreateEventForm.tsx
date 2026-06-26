@@ -227,7 +227,7 @@ export default function CreateEventForm() {
       </div>
 
       <div>
-        <label style={labelStyle}>Capacity <span style={{ color: 'var(--color-muted)', fontWeight: 400 }}>(blank = unlimited)</span></label>
+        <label style={labelStyle}>Target capacity <span style={{ color: 'var(--color-muted)', fontWeight: 400 }}>(indicative — sign-ups can still go over)</span></label>
         <input
           type="number"
           min="1"

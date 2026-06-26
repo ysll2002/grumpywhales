@@ -230,7 +230,7 @@ export default function EditEventForm({ event }: { event: Event }) {
       </div>
 
       <div>
-        <label style={labelStyle}>Capacity <span style={{ color: 'var(--color-muted)', fontWeight: 400 }}>(blank = unlimited)</span></label>
+        <label style={labelStyle}>Target capacity <span style={{ color: 'var(--color-muted)', fontWeight: 400 }}>(indicative — sign-ups can still go over)</span></label>
         <input type="number" min="1" step="1" placeholder="No limit" value={capacity} onChange={e => setCapacity(e.target.value)} style={inputStyle} />
       </div>
 

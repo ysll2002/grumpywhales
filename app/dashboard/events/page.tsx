@@ -4,6 +4,34 @@ import Link from 'next/link';
 import { formatEventDateTime, formatMoney, computeNextOccurrences, signupOpenInfo, type Event } from '@/lib/events';
 import AttendRequestButton from './AttendRequestButton';
 import CancelSignupButton from './CancelSignupButton';
+import { stripe } from '@/lib/stripe';
+
+// Resolve a paid=1 redirect from Stripe: load the session, confirm it's paid,
+// and flip our signup row to paid synchronously so the user doesn't have to
+// wait for the webhook before seeing 'Paid'. The session's client_reference_id
+// is the signup row id (set when we created the checkout session).
+async function confirmPaymentFromSession(sessionId: string, viewerProfileId: string): Promise<void> {
+  try {
+    const sess = await stripe().checkout.sessions.retrieve(sessionId);
+    if (sess.payment_status !== 'paid') return;
+    const signupId = sess.client_reference_id;
+    if (!signupId) return;
+    const paymentIntentId = typeof sess.payment_intent === 'string' ? sess.payment_intent : null;
+    await supabase
+      .from('event_signups')
+      .update({
+        payment_status:           'paid',
+        paid_at:                  new Date().toISOString(),
+        stripe_payment_intent_id: paymentIntentId,
+        updated_at:               new Date().toISOString(),
+      })
+      .eq('id', signupId)
+      .eq('profile_id', viewerProfileId)
+      .eq('payment_status', 'unpaid');
+  } catch (err) {
+    console.error('[dashboard/events] stripe verify failed', err);
+  }
+}
 import { SIGNUP_STATUS_LABELS, PAYMENT_STATUS_LABELS, type SignupStatus, type PaymentStatus } from '@/lib/signups';
 
 // Each session is an independently joinable card. Cap the number of
@@ -43,10 +71,17 @@ function occurrenceIso(eventStartsAt: string, occDate: string): string {
   return out.toISOString();
 }
 
-export default async function DashboardHome() {
+export default async function DashboardHome({ searchParams }: { searchParams: Promise<{ paid?: string; session_id?: string }> }) {
   const session = await auth();
   const profileId = session!.user.profileId;
   const now = Date.now();
+
+  const { paid, session_id } = await searchParams;
+  // Run the Stripe sync-verify BEFORE the signup query so the freshly-paid
+  // status shows up in this very render.
+  if (paid === '1' && session_id) {
+    await confirmPaymentFromSession(session_id, profileId);
+  }
 
   const [attendingRes, allEventsRes] = await Promise.all([
     supabase
@@ -140,6 +175,19 @@ export default async function DashboardHome() {
 
   return (
     <div className="p-8 max-w-5xl">
+      {paid === '1' && (
+        <div className="rounded-2xl px-5 py-3 mb-6 text-sm"
+          style={{ backgroundColor: '#D1FAE5', border: '1px solid #A7F3D0', color: 'var(--color-accent-dk)' }}>
+          ✓ <strong>Payment received.</strong> See you at the session.
+        </div>
+      )}
+      {paid === '0' && (
+        <div className="rounded-2xl px-5 py-3 mb-6 text-sm"
+          style={{ backgroundColor: '#FEE2E2', border: '1px solid var(--color-red)', color: 'var(--color-red)' }}>
+          Payment cancelled. You can try again from the row below.
+        </div>
+      )}
+
       <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-semibold mb-1" style={{ fontFamily: 'var(--font-display)' }}>Join event</h1>
@@ -211,12 +259,7 @@ function AttendingCard({
         color:           'var(--color-fg)',
         opacity:         cancelled ? 0.75 : past ? 0.85 : 1,
       }}>
-      {/* The card body (left side) navigates to the public event page.
-          The right column stays its own interactive area so the signup
-          button isn't nested inside an <a>. */}
-      <Link href={`/e/${event.payment_reference}`}
-        className="min-w-0 flex-1 block"
-        style={{ textDecoration: 'none', color: 'inherit' }}>
+      <div className="min-w-0 flex-1">
         <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--color-muted)' }}>
           {event.title}{event.location ? ` · ${event.location}` : ''}
         </p>
@@ -226,7 +269,7 @@ function AttendingCard({
         <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>
           {cancelled ? 'Sign-ups closed' : capacityLine}
         </p>
-      </Link>
+      </div>
 
       <div className="flex flex-col items-end gap-1 flex-shrink-0">
         {cancelled ? (
