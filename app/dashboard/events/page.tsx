@@ -115,19 +115,20 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
 
   const allAttending = [...myRows, ...discoveryRows];
 
-  // Fetch accepted counts for every (event_id, occurrence_date) we'll show.
-  // One pass: pull all accepted signups for the involved events, then bucket.
+  // Fetch signup totals (matches the admin Attendees 'Signed up' column —
+  // any non-cancelled status) for every (event_id, occurrence_date) we
+  // show. One pass, bucket locally.
   const involvedEventIds = Array.from(new Set(allAttending.map(r => r.event.id)));
-  const acceptedByKey = new Map<string, number>();
+  const signupCountByKey = new Map<string, number>();
   if (involvedEventIds.length > 0) {
-    const { data: acceptedRows } = await supabase
+    const { data: signupRows } = await supabase
       .from('event_signups')
       .select('event_id, occurrence_date')
       .in('event_id', involvedEventIds)
-      .eq('status', 'accepted');
-    for (const r of (acceptedRows ?? []) as { event_id: string; occurrence_date: string }[]) {
+      .neq('status', 'cancelled');
+    for (const r of (signupRows ?? []) as { event_id: string; occurrence_date: string }[]) {
       const k = `${r.event_id}:${r.occurrence_date}`;
-      acceptedByKey.set(k, (acceptedByKey.get(k) ?? 0) + 1);
+      signupCountByKey.set(k, (signupCountByKey.get(k) ?? 0) + 1);
     }
   }
 
@@ -136,7 +137,7 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
     const openInfo = signupOpenInfo(r.event, r.iso);
     return {
       ...r,
-      accepted: acceptedByKey.get(r.key) ?? 0,
+      signedUp:   signupCountByKey.get(r.key) ?? 0,
       opensAtIso: openInfo.open ? null : openInfo.opensAt.toISOString(),
     };
   });
@@ -280,20 +281,20 @@ function Badge({ tone, children }: { tone: { bg: string; fg: string }; children:
 }
 
 function AttendingCard({
-  event, iso, cancelled, signup, accepted, opensAtIso, past = false,
+  event, iso, cancelled, signup, signedUp, opensAtIso, past = false,
 }: {
   event:      Event;
   iso:        string;
   cancelled:  boolean;
   signup:     { id: string; status: SignupStatus; payment_status: PaymentStatus } | null;
-  accepted:   number;
+  signedUp:   number;
   opensAtIso: string | null;
   past?:      boolean;
 }) {
   const dateLine = formatEventDateTime(iso).toUpperCase();
   const capacityLine = event.capacity != null
-    ? `${accepted} / ${event.capacity} on the list`
-    : `${accepted} signed up`;
+    ? `${signedUp} / ${event.capacity} signed up`
+    : `${signedUp} signed up`;
   const occurrenceDate = iso.slice(0, 10);
 
   return (
