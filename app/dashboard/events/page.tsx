@@ -1,9 +1,11 @@
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import Link from 'next/link';
-import { formatEventDateTime, formatMoney, type Event } from '@/lib/events';
+import { formatEventDateTime, formatMoney, computeNextOccurrences, type Event } from '@/lib/events';
 import { SIGNUP_STATUS_LABELS, PAYMENT_STATUS_LABELS, type SignupStatus, type PaymentStatus } from '@/lib/signups';
 import { isPlatformAdmin } from '@/lib/platform-admin';
+
+const DISCOVERY_OCCURRENCES_PER_EVENT = 8;
 
 const STATUS_BADGE: Record<SignupStatus, { bg: string; fg: string }> = {
   accepted:   { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
@@ -55,7 +57,7 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
     ? supabase.from('events').select('*').order('starts_at', { ascending: true })
     : supabase.from('events').select('*').eq('admin_id', profileId).order('starts_at', { ascending: true });
 
-  const [hostingRes, attendingRes] = await Promise.all([
+  const [hostingRes, attendingRes, allEventsRes] = await Promise.all([
     hostingQuery,
     supabase
       .from('event_signups')
@@ -63,6 +65,9 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
       .eq('profile_id', profileId)
       .neq('status', 'cancelled')
       .order('occurrence_date', { ascending: true }),
+    // Every published event on the platform — used to surface sessions the
+    // user has NOT signed up to alongside the ones they have.
+    supabase.from('events').select('*').eq('status', 'published'),
   ]);
 
   const hostingEvents = (hostingRes.data ?? []) as Event[];
@@ -70,13 +75,44 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
 
   const upcomingHosting = hostingEvents.filter(e => new Date(e.starts_at).getTime() >= now);
 
-  const orderedAttending = ((attendingRes.data ?? []) as unknown as AttendingRow[])
+  type AttendingDisplay = {
+    key:       string;
+    event:     Event;
+    iso:       string;
+    cancelled: boolean;
+    signup:    { id: string; status: SignupStatus; payment_status: PaymentStatus } | null;
+  };
+
+  // 1. My signups — past + future, all kept regardless of date.
+  const myRows: AttendingDisplay[] = ((attendingRes.data ?? []) as unknown as AttendingRow[])
     .filter(r => r.events)
     .map(r => ({
-      row: r,
-      iso: occurrenceIso(r.events!.starts_at, r.occurrence_date),
+      key:       `${r.events!.id}:${r.occurrence_date}`,
+      event:     r.events!,
+      iso:       occurrenceIso(r.events!.starts_at, r.occurrence_date),
       cancelled: (r.events!.cancelled_dates ?? []).includes(r.occurrence_date),
-    }))
+      signup:    { id: r.id, status: r.status, payment_status: r.payment_status },
+    }));
+  const mySignupKeys = new Set(myRows.map(r => r.key));
+
+  // 2. Discovery rows — for every published event, expand the next N
+  //    un-cancelled occurrences, drop the ones already in mySignupKeys.
+  const discoveryRows: AttendingDisplay[] = ((allEventsRes.data ?? []) as Event[])
+    .flatMap(ev => {
+      const cancelled = new Set(ev.cancelled_dates ?? []);
+      return computeNextOccurrences(ev, DISCOVERY_OCCURRENCES_PER_EVENT)
+        .filter(iso => !cancelled.has(iso.slice(0, 10)))
+        .map(iso => ({
+          key:       `${ev.id}:${iso.slice(0, 10)}`,
+          event:     ev,
+          iso,
+          cancelled: false,
+          signup:    null,
+        }));
+    })
+    .filter(r => !mySignupKeys.has(r.key));
+
+  const orderedAttending = [...myRows, ...discoveryRows]
     .sort((a, b) => new Date(a.iso).getTime() - new Date(b.iso).getTime());
 
   return (
@@ -176,12 +212,12 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
         <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>Attending</h2>
         {orderedAttending.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-            Nothing on your calendar yet. Open an event link from a host to sign up.
+            No upcoming sessions on the platform yet.
           </p>
         ) : (
           <div className="grid gap-3">
-            {orderedAttending.map(({ row, iso, cancelled }) => row.events && (
-              <Link key={row.id} href={`/e/${row.events.payment_reference}`}
+            {orderedAttending.map(({ key, event, iso, cancelled, signup }) => (
+              <Link key={key} href={`/e/${event.payment_reference}`}
                 className="p-5 rounded-2xl flex items-start justify-between gap-4"
                 style={{
                   backgroundColor: cancelled ? '#FAFAFA' : 'var(--color-card)',
@@ -192,25 +228,27 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="text-base font-semibold truncate" style={{ fontFamily: 'var(--font-display)', textDecoration: cancelled ? 'line-through' : undefined }}>
-                      {row.events.title}
+                      {event.title}
                     </span>
                     {cancelled ? (
                       <Badge tone={{ bg: '#FEE2E2', fg: 'var(--color-red)' }}>Cancelled by host</Badge>
-                    ) : (
+                    ) : signup ? (
                       <>
-                        <Badge tone={STATUS_BADGE[row.status]}>{SIGNUP_STATUS_LABELS[row.status]}</Badge>
-                        {Number(row.events.fee_amount) > 0 && (
-                          <Badge tone={PAYMENT_BADGE[row.payment_status]}>{PAYMENT_STATUS_LABELS[row.payment_status]}</Badge>
+                        <Badge tone={STATUS_BADGE[signup.status]}>{SIGNUP_STATUS_LABELS[signup.status]}</Badge>
+                        {Number(event.fee_amount) > 0 && (
+                          <Badge tone={PAYMENT_BADGE[signup.payment_status]}>{PAYMENT_STATUS_LABELS[signup.payment_status]}</Badge>
                         )}
                       </>
+                    ) : (
+                      <Badge tone={{ bg: '#DBEAFE', fg: '#1D4ED8' }}>Open to join</Badge>
                     )}
                   </div>
                   <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-                    {formatEventDateTime(iso)}{row.events.location ? ` · ${row.events.location}` : ''}
+                    {formatEventDateTime(iso)}{event.location ? ` · ${event.location}` : ''}
                   </p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-xl font-semibold">{Number(row.events.fee_amount) > 0 ? formatMoney(row.events.fee_amount, row.events.fee_currency) : 'Free'}</p>
+                  <p className="text-xl font-semibold">{Number(event.fee_amount) > 0 ? formatMoney(event.fee_amount, event.fee_currency) : 'Free'}</p>
                 </div>
               </Link>
             ))}
