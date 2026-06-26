@@ -37,8 +37,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   ]);
 
   const nav: { href: string; label: string; badge?: number }[] = [
-    { href: '/dashboard/events',  label: 'Join event' },
     ...(isAdmin ? [{ href: '/dashboard/manage',   label: 'Manage event' }] : []),
+    { href: '/dashboard/events',  label: 'Join event' },
     { href: '/dashboard/unpaid',  label: 'Unpaid', badge: unpaidCount },
     { href: '/dashboard/profile', label: 'Profile' },
     ...(isAdmin ? [{ href: '/dashboard/settings', label: 'Settings' }] : []),
