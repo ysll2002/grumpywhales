@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { auth } from '@/auth';
 
 const SOFTWARE_LD = {
   '@context':              'https://schema.org',
@@ -66,7 +67,9 @@ const FAQ_LD = {
   })),
 };
 
-export default function Home() {
+export default async function Home() {
+  const session = await auth();
+  const signedIn = !!session?.user?.profileId;
   return (
     <main className="min-h-screen">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(SOFTWARE_LD) }} />
@@ -81,10 +84,18 @@ export default function Home() {
         <div className="flex items-center gap-4 text-sm">
           <Link href="#how-it-works" className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)] hidden sm:inline">How it works</Link>
           <Link href="#faq"          className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)] hidden sm:inline">FAQ</Link>
-          <Link href="/login"        className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)]">Log in</Link>
-          <Link href="/register"     className="px-5 py-2 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
-            Get started
-          </Link>
+          {signedIn ? (
+            <Link href="/dashboard/events" className="px-5 py-2 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}>
+              My events →
+            </Link>
+          ) : (
+            <>
+              <Link href="/login"    className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)]">Log in</Link>
+              <Link href="/register" className="px-5 py-2 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
+                Get started
+              </Link>
+            </>
+          )}
         </div>
       </nav>
 
@@ -102,8 +113,8 @@ export default function Home() {
             GrumpyWhales lets you set up a paid event in under a minute, share it with attendees,
             and collect their fees without chasing. You stay the admin. We do the matching.
           </p>
-          <Link href="/register" className="inline-block px-8 py-3 rounded-full font-medium text-base" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
-            Create your first event — it&apos;s free →
+          <Link href={signedIn ? '/dashboard/events' : '/register'} className="inline-block px-8 py-3 rounded-full font-medium text-base" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}>
+            {signedIn ? 'Open my events →' : "Create your first event — it's free →"}
           </Link>
         </div>
       </section>
@@ -190,8 +201,8 @@ export default function Home() {
           Stop chasing.<br />
           <span style={{ color: 'var(--color-accent)' }}>Start hosting.</span>
         </h2>
-        <Link href="/register" className="inline-block px-8 py-3 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
-          Create your first event →
+        <Link href={signedIn ? '/dashboard/events' : '/register'} className="inline-block px-8 py-3 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}>
+          {signedIn ? 'Open my events →' : 'Create your first event →'}
         </Link>
       </section>
 
