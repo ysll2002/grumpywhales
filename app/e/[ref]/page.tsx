@@ -8,6 +8,7 @@ import {
   formatEventDateTime, formatMoney,
   RECURRENCE_LABELS, SIGNUP_MODE_LABELS,
   computeNextOccurrences, occurrenceDate,
+  signupOpenInfo,
   type Event,
 } from '@/lib/events';
 import type { SignupStatus, PaymentStatus } from '@/lib/signups';
@@ -216,22 +217,26 @@ export default async function PublicEventPage({
                       </>
                     )}
                   </div>
-                  {!isCancelled && (
-                    <SignupButton
-                      eventId={event.id}
-                      occurrenceDate={date}
-                      occurrenceIso={iso}
-                      feeLabel={feeLabel}
-                      hasFee={hasFee}
-                      signedIn={!!session}
-                      loginHref={loginRef}
-                      currentStatus={mine?.status ?? null}
-                      paymentStatus={mine?.payment_status ?? null}
-                      signupMode={event.signup_mode}
-                      isFull={isFull}
-                      listPublished={listPublished}
-                    />
-                  )}
+                  {!isCancelled && (() => {
+                    const openInfo = signupOpenInfo(event, iso);
+                    return (
+                      <SignupButton
+                        eventId={event.id}
+                        occurrenceDate={date}
+                        occurrenceIso={iso}
+                        feeLabel={feeLabel}
+                        hasFee={hasFee}
+                        signedIn={!!session}
+                        loginHref={loginRef}
+                        currentStatus={mine?.status ?? null}
+                        paymentStatus={mine?.payment_status ?? null}
+                        signupMode={event.signup_mode}
+                        isFull={isFull}
+                        listPublished={listPublished}
+                        signupOpensAtIso={openInfo.open ? null : openInfo.opensAt.toISOString()}
+                      />
+                    );
+                  })()}
                 </div>
               );
             })}

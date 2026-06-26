@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
-import { computeNextOccurrences, occurrenceDate } from '@/lib/events';
+import { computeNextOccurrences, occurrenceDate, signupOpenInfo } from '@/lib/events';
 import type { SignupStatus, PaymentStatus } from '@/lib/signups';
 
 // Validate the requested occurrence_date against the event.
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const body = await req.json().catch(() => ({}));
   const { data: event, error: lookupErr } = await supabase
     .from('events')
-    .select('id, status, starts_at, recurrence, signup_mode, capacity, fee_amount, cancelled_dates')
+    .select('id, status, starts_at, recurrence, signup_mode, capacity, fee_amount, cancelled_dates, signup_open_dow, signup_open_time')
     .eq('id', id)
     .maybeSingle();
   if (lookupErr) {
@@ -50,6 +50,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!occDate) return NextResponse.json({ error: 'invalid_occurrence' }, { status: 400 });
   if ((event.cancelled_dates ?? []).includes(occDate)) {
     return NextResponse.json({ error: 'occurrence_cancelled' }, { status: 409 });
+  }
+
+  // Honour the weekly sign-up window — refuse early sign-ups before the
+  // configured day/time. Hosts/co-admins managing the roster from the
+  // admin page hit a different endpoint, so this only affects attendees.
+  const occIso = (() => {
+    const start = new Date(event.starts_at);
+    const [y, m, d] = occDate.split('-').map(Number);
+    const out = new Date(start);
+    out.setUTCFullYear(y, m - 1, d);
+    return out.toISOString();
+  })();
+  const openInfo = signupOpenInfo(event, occIso);
+  if (!openInfo.open) {
+    return NextResponse.json({
+      error:   'signups_not_open_yet',
+      detail:  `Sign-ups open ${openInfo.opensAt.toISOString()}`,
+      opens_at: openInfo.opensAt.toISOString(),
+    }, { status: 409 });
   }
 
   // Existing signup for this specific occurrence — block unless cancelled.

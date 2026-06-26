@@ -17,6 +17,7 @@ type Props = {
   signupMode:       'first_come' | 'curated';
   isFull:           boolean;
   listPublished:    boolean;         // curated: has the host emailed the final list yet?
+  signupOpensAtIso: string | null;   // null = sign-ups already open; ISO string = opens at this moment
 };
 
 // The final attendee list is announced the day before the session.
@@ -29,7 +30,7 @@ function announcementDateLabel(occurrenceIso: string): string | null {
 
 export default function SignupButton({
   eventId, occurrenceDate, occurrenceIso, feeLabel, hasFee, signedIn, loginHref,
-  currentStatus, paymentStatus, signupMode, isFull, listPublished,
+  currentStatus, paymentStatus, signupMode, isFull, listPublished, signupOpensAtIso,
 }: Props) {
   const router = useRouter();
   const [busy,    setBusy]    = useState(false);
@@ -100,6 +101,27 @@ export default function SignupButton({
 
   const isActive = currentStatus && currentStatus !== 'cancelled' && currentStatus !== 'declined';
   const announceDay = announcementDateLabel(occurrenceIso);
+
+  // Sign-ups not open yet (weekly events only). Users who already have a
+  // signup keep seeing their status; new sign-ups are blocked until opensAt.
+  if (!isActive && signupOpensAtIso) {
+    const opensAt = new Date(signupOpensAtIso);
+    const opensLabel = opensAt.toLocaleString('en-GB', {
+      weekday: 'long', day: 'numeric', month: 'short',
+      hour: '2-digit', minute: '2-digit',
+    });
+    return (
+      <div className="flex flex-col gap-1 items-end">
+        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
+          style={{ backgroundColor: '#FFF4B8', color: '#7C5800' }}>
+          Sign-ups open {opensLabel}
+        </span>
+        <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
+          Status will change to “Open for sign-up” at that time.
+        </p>
+      </div>
+    );
+  }
 
   if (isActive) {
     // For curated events, suppress the final accepted/waitlisted/declined state

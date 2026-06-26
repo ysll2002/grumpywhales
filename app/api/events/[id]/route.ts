@@ -116,6 +116,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (v === 'invalid') return NextResponse.json({ error: 'lng_invalid' }, { status: 400 });
     patch.lng = v;
   }
+  if ('signup_open_dow' in body) {
+    if (body.signup_open_dow == null || body.signup_open_dow === '') {
+      patch.signup_open_dow = null;
+    } else {
+      const n = Number(body.signup_open_dow);
+      if (!Number.isInteger(n) || n < 0 || n > 6) {
+        return NextResponse.json({ error: 'signup_open_dow_invalid' }, { status: 400 });
+      }
+      patch.signup_open_dow = n;
+    }
+  }
+  if ('signup_open_time' in body) {
+    if (!body.signup_open_time) {
+      patch.signup_open_time = null;
+    } else if (typeof body.signup_open_time !== 'string' || !/^\d{2}:\d{2}(:\d{2})?$/.test(body.signup_open_time)) {
+      return NextResponse.json({ error: 'signup_open_time_invalid' }, { status: 400 });
+    } else {
+      patch.signup_open_time = body.signup_open_time.length === 5 ? `${body.signup_open_time}:00` : body.signup_open_time;
+    }
+  }
 
   const { data, error } = await supabase
     .from('events')

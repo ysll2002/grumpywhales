@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
 
-  const { title, description, starts_at, ends_at, location, lat, lng, fee_amount, fee_currency, status, recurrence, signup_mode, capacity } = body;
+  const { title, description, starts_at, ends_at, location, lat, lng, fee_amount, fee_currency, status, recurrence, signup_mode, capacity, signup_open_dow, signup_open_time } = body;
 
   if (typeof title !== 'string' || !title.trim()) {
     return NextResponse.json({ error: 'title_required' }, { status: 400 });
@@ -71,6 +71,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'coords_invalid' }, { status: 400 });
   }
 
+  // Sign-up open window — only honoured for weekly events. Skipped on the
+  // other cadences so a bad payload from those forms can't poison the row.
+  let finalSignupOpenDow:  number | null = null;
+  let finalSignupOpenTime: string | null = null;
+  if (finalRecurrence === 'weekly' && signup_open_dow !== '' && signup_open_dow != null && signup_open_time) {
+    const dow = Number(signup_open_dow);
+    if (!Number.isInteger(dow) || dow < 0 || dow > 6) {
+      return NextResponse.json({ error: 'signup_open_dow_invalid' }, { status: 400 });
+    }
+    if (typeof signup_open_time !== 'string' || !/^\d{2}:\d{2}(:\d{2})?$/.test(signup_open_time)) {
+      return NextResponse.json({ error: 'signup_open_time_invalid' }, { status: 400 });
+    }
+    finalSignupOpenDow  = dow;
+    finalSignupOpenTime = signup_open_time.length === 5 ? `${signup_open_time}:00` : signup_open_time;
+  }
+
   const { data, error } = await supabase
     .from('events')
     .insert({
@@ -88,6 +104,8 @@ export async function POST(req: NextRequest) {
       capacity:          finalCapacity,
       lat:               finalLat,
       lng:               finalLng,
+      signup_open_dow:   finalSignupOpenDow,
+      signup_open_time:  finalSignupOpenTime,
       payment_reference: generateEventReference(),
     })
     .select('*')

@@ -48,6 +48,8 @@ export type Event = {
   attendees_published_at:     string | null;
   cancelled_dates:            string[];   // DATE[] in DB, "YYYY-MM-DD" strings here
   published_occurrence_dates: string[];   // dates whose final list has been emailed
+  signup_open_dow:            number | null;   // 0=Sun..6=Sat (weekly events only)
+  signup_open_time:           string | null;   // 'HH:MM' or 'HH:MM:SS' UTC (weekly only)
   created_at:                 string;
   updated_at:                 string;
 };
@@ -101,4 +103,37 @@ export function computeNextOccurrences(
 // 'occurrence_date' value lines up with what the DB column stores.
 export function occurrenceDate(iso: string): string {
   return iso.slice(0, 10);
+}
+
+export const DOW_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+export const DOW_LABELS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// For a weekly event with a (dow, time) sign-up window, find the moment at
+// which sign-ups for the given occurrence open. Walk back day-by-day from the
+// occurrence with the time-of-day fixed, until we land on the right weekday
+// strictly before the occurrence (max 7 iterations).
+export function signupOpensAt(occurrenceIso: string, dow: number, hhmm: string): Date {
+  const [h, m] = hhmm.split(':').map(Number);
+  const occ = new Date(occurrenceIso).getTime();
+  const open = new Date(occurrenceIso);
+  open.setUTCHours(h, m, 0, 0);
+  for (let i = 0; i < 8; i++) {
+    if (open.getUTCDay() === dow && open.getTime() < occ) return open;
+    open.setUTCDate(open.getUTCDate() - 1);
+  }
+  return open;
+}
+
+// Returns whether a given occurrence is currently accepting sign-ups. Only
+// weekly events with both signup_open_dow + signup_open_time set are gated;
+// everything else is always open.
+export function signupOpenInfo(
+  event: Pick<Event, 'recurrence' | 'signup_open_dow' | 'signup_open_time'>,
+  occurrenceIso: string,
+  now: Date = new Date(),
+): { open: true } | { open: false; opensAt: Date } {
+  if (event.recurrence !== 'weekly') return { open: true };
+  if (event.signup_open_dow == null || !event.signup_open_time) return { open: true };
+  const opensAt = signupOpensAt(occurrenceIso, event.signup_open_dow, event.signup_open_time);
+  return now.getTime() >= opensAt.getTime() ? { open: true } : { open: false, opensAt };
 }

@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { type EventRecurrence, type EventSignupMode } from '@/lib/events';
+import { type EventRecurrence, type EventSignupMode, DOW_LABELS } from '@/lib/events';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
 
 const inputStyle: React.CSSProperties = {
@@ -58,6 +58,8 @@ export default function CreateEventForm() {
   const [recurrence,  setRecurrence]  = useState<EventRecurrence>('none');
   const [signupMode,  setSignupMode]  = useState<EventSignupMode>('first_come');
   const [capacity,    setCapacity]    = useState('');
+  const [openDow,     setOpenDow]     = useState('');
+  const [openTime,    setOpenTime]    = useState('');
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState('');
 
@@ -81,6 +83,8 @@ export default function CreateEventForm() {
         signup_mode: signupMode,
         capacity:    capacity ? Number(capacity) : null,
         status: 'published',
+        signup_open_dow:  recurrence === 'weekly' && openDow !== '' ? Number(openDow) : null,
+        signup_open_time: recurrence === 'weekly' && openTime       ? openTime        : null,
       }),
     });
 
@@ -150,6 +154,31 @@ export default function CreateEventForm() {
           <option value="monthly">Monthly — same day each month</option>
         </select>
       </div>
+
+      {recurrence === 'weekly' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-2xl"
+          style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
+          <div className="sm:col-span-2">
+            <p className="text-sm font-medium mb-1">Sign-up window</p>
+            <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
+              Each week&apos;s session opens for sign-ups at the day &amp; time below. Leave blank to keep every session open for sign-up indefinitely.
+            </p>
+          </div>
+          <div>
+            <label style={labelStyle}>Open day</label>
+            <select value={openDow} onChange={e => setOpenDow(e.target.value)} style={selectStyle}>
+              <option value="">— always open —</option>
+              {DOW_LABELS.map((label, i) => (
+                <option key={i} value={i}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Open time <span style={{ color: 'var(--color-muted)', fontWeight: 400 }}>(UTC)</span></label>
+            <input type="time" value={openTime} onChange={e => setOpenTime(e.target.value)} style={inputStyle} />
+          </div>
+        </div>
+      )}
 
       <div>
         <label style={labelStyle}>Location</label>
