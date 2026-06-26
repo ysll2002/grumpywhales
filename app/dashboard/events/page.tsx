@@ -2,6 +2,7 @@ import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import Link from 'next/link';
 import { formatEventDateTime, formatMoney, computeNextOccurrences, signupOpenInfo, type Event } from '@/lib/events';
+import AttendRequestButton from './AttendRequestButton';
 import { SIGNUP_STATUS_LABELS, PAYMENT_STATUS_LABELS, type SignupStatus, type PaymentStatus } from '@/lib/signups';
 import { isPlatformAdmin } from '@/lib/platform-admin';
 
@@ -293,17 +294,23 @@ function AttendingCard({
   const capacityLine = event.capacity != null
     ? `${accepted} / ${event.capacity} on the list`
     : `${accepted} signed up`;
+  const occurrenceDate = iso.slice(0, 10);
 
   return (
-    <Link href={`/e/${event.payment_reference}`}
+    <div
       className="p-5 rounded-2xl flex items-start justify-between gap-4 flex-wrap"
       style={{
         backgroundColor: cancelled || past ? '#FAFAFA' : 'var(--color-card)',
         border:          '1px solid var(--color-border)',
-        textDecoration:  'none', color: 'var(--color-fg)',
+        color:           'var(--color-fg)',
         opacity:         cancelled ? 0.75 : past ? 0.85 : 1,
       }}>
-      <div className="min-w-0 flex-1">
+      {/* The card body (left side) navigates to the public event page.
+          The right column stays its own interactive area so the signup
+          button isn't nested inside an <a>. */}
+      <Link href={`/e/${event.payment_reference}`}
+        className="min-w-0 flex-1 block"
+        style={{ textDecoration: 'none', color: 'inherit' }}>
         <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--color-muted)' }}>
           {event.title}{event.location ? ` · ${event.location}` : ''}
         </p>
@@ -313,7 +320,7 @@ function AttendingCard({
         <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>
           {cancelled ? 'Sign-ups closed' : capacityLine}
         </p>
-      </div>
+      </Link>
 
       <div className="flex flex-col items-end gap-1 flex-shrink-0">
         {cancelled ? (
@@ -334,16 +341,17 @@ function AttendingCard({
               Status will change to “Open for sign-up” at that time.
             </p>
           </>
-        ) : (
-          <span className="px-4 py-2 rounded-full text-sm font-medium"
-            style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
-            {event.signup_mode === 'curated' ? 'Request to attend' : 'Sign me up'}
-          </span>
+        ) : past ? null : (
+          <AttendRequestButton
+            eventId={event.id}
+            occurrenceDate={occurrenceDate}
+            signupMode={event.signup_mode}
+          />
         )}
         <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>
           {Number(event.fee_amount) > 0 ? `${formatMoney(event.fee_amount, event.fee_currency)} per session` : 'Free'}
         </p>
       </div>
-    </Link>
+    </div>
   );
 }
