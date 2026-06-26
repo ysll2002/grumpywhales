@@ -15,6 +15,21 @@ const inputStyle: React.CSSProperties = {
   outline: 'none',
 };
 
+// Selects: replace the tiny native arrow (which the browser pins flush to
+// the right edge of a wide field) with a larger chevron at a comfortable
+// inset, so it reads as belonging to the field rather than floating off.
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  MozAppearance: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23111' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 1rem center',
+  backgroundSize: '12px 8px',
+  paddingRight: '2.5rem',
+};
+
 const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '0.85rem',
@@ -135,7 +150,7 @@ export default function EditEventForm({ event }: { event: Event }) {
         </div>
         <div>
           <label style={labelStyle}>Currency</label>
-          <select value={feeCurrency} onChange={e => setFeeCurrency(e.target.value)} style={inputStyle}>
+          <select value={feeCurrency} onChange={e => setFeeCurrency(e.target.value)} style={selectStyle}>
             <option value="GBP">GBP £</option>
             <option value="EUR">EUR €</option>
             <option value="USD">USD $</option>
@@ -145,7 +160,7 @@ export default function EditEventForm({ event }: { event: Event }) {
 
       <div>
         <label style={labelStyle}>Repeats</label>
-        <select value={recurrence} onChange={e => setRecurrence(e.target.value as EventRecurrence)} style={inputStyle}>
+        <select value={recurrence} onChange={e => setRecurrence(e.target.value as EventRecurrence)} style={selectStyle}>
           <option value="none">One-off — happens once</option>
           <option value="daily">Daily — every day</option>
           <option value="weekly">Weekly — same day each week</option>
@@ -155,7 +170,7 @@ export default function EditEventForm({ event }: { event: Event }) {
 
       <div>
         <label style={labelStyle}>Sign-up</label>
-        <select value={signupMode} onChange={e => setSignupMode(e.target.value as EventSignupMode)} style={inputStyle}>
+        <select value={signupMode} onChange={e => setSignupMode(e.target.value as EventSignupMode)} style={selectStyle}>
           <option value="first_come">First-come, first-served</option>
           <option value="curated">I&apos;ll pick the list</option>
         </select>
@@ -168,7 +183,7 @@ export default function EditEventForm({ event }: { event: Event }) {
 
       <div>
         <label style={labelStyle}>Status</label>
-        <select value={status} onChange={e => setStatus(e.target.value as EventStatus)} style={inputStyle}>
+        <select value={status} onChange={e => setStatus(e.target.value as EventStatus)} style={selectStyle}>
           <option value="published">Live — open to attendees</option>
           <option value="closed">Closed — no new attendees</option>
           <option value="cancelled">Cancelled</option>
