@@ -6,11 +6,11 @@ import AttendRequestButton from './AttendRequestButton';
 import { SIGNUP_STATUS_LABELS, PAYMENT_STATUS_LABELS, type SignupStatus, type PaymentStatus } from '@/lib/signups';
 import { isPlatformAdmin } from '@/lib/platform-admin';
 
-// Window we scan to find the next discoverable session per event. Discovery
-// surfaces only ONE card per event (the next un-cancelled, un-joined date)
-// so a user can't accidentally request multiple sessions of a recurring
-// event from this page — they pick further-out dates from /e/<ref> if needed.
-const DISCOVERY_SCAN_WINDOW = 12;
+// Each session is an independently joinable card. Cap the number of
+// future cards we expand per event so a long-running weekly doesn't
+// dominate the dashboard, but still show all upcoming sessions in the
+// window so users can pick any specific date directly from here.
+const DISCOVERY_OCCURRENCES_PER_EVENT = 8;
 
 const STATUS_BADGE: Record<SignupStatus, { bg: string; fg: string }> = {
   accepted:   { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
@@ -100,26 +100,24 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
     }));
   const mySignupKeys = new Set(myRows.map(r => r.key));
 
-  // 2. Discovery rows — for every published event, surface the FIRST
-  //    un-cancelled future date the user hasn't already joined. Capped at
-  //    one per event so a user can't tap 'Request to attend' 8 times in a
-  //    row and end up enrolled in every future session of a weekly event.
+  // 2. Discovery rows — for every published event, expand the next N
+  //    un-cancelled occurrences as separate cards, dropping the ones the
+  //    user already has a signup for. Each session is its own card with
+  //    its own 'Request to attend' button.
   const discoveryRows: AttendingDisplay[] = ((allEventsRes.data ?? []) as Event[])
     .flatMap(ev => {
       const cancelled = new Set(ev.cancelled_dates ?? []);
-      const next = computeNextOccurrences(ev, DISCOVERY_SCAN_WINDOW).find(iso => {
-        const d = iso.slice(0, 10);
-        return !cancelled.has(d) && !mySignupKeys.has(`${ev.id}:${d}`);
-      });
-      if (!next) return [];
-      return [{
-        key:       `${ev.id}:${next.slice(0, 10)}`,
-        event:     ev,
-        iso:       next,
-        cancelled: false,
-        signup:    null,
-      }];
-    });
+      return computeNextOccurrences(ev, DISCOVERY_OCCURRENCES_PER_EVENT)
+        .filter(iso => !cancelled.has(iso.slice(0, 10)))
+        .map(iso => ({
+          key:       `${ev.id}:${iso.slice(0, 10)}`,
+          event:     ev,
+          iso,
+          cancelled: false,
+          signup:    null,
+        }));
+    })
+    .filter(r => !mySignupKeys.has(r.key));
 
   const allAttending = [...myRows, ...discoveryRows];
 
