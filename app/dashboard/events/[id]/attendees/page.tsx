@@ -151,7 +151,12 @@ export default async function AttendeesPage({
         </div>
       )}
 
+      {/* `key` forces a fresh client component instance per session date,
+          so the table's local `rows` state always reflects what the server
+          just fetched for the selected occurrence — switching tabs no
+          longer carries over the previous tab's optimistic edits. */}
       <AttendeesTable
+        key={selected}
         eventId={ev.id}
         occurrenceDate={selected}
         eventStarted={eventStarted}
