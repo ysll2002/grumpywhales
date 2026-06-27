@@ -2,58 +2,40 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { auth } from '@/auth';
 
-const SOFTWARE_LD = {
-  '@context':              'https://schema.org',
-  '@type':                 'SoftwareApplication',
-  name:                    'GrumpyWhales',
-  applicationCategory:     'BusinessApplication',
-  applicationSubCategory:  'Event management & paid registration',
-  operatingSystem:         'Web',
-  url:                     'https://grumpywhales.com',
-  description:
-    'Create paid events and get paid on time. GrumpyWhales is a free tool for hosts, community organisers, workshops and meet-ups to set up an event, collect attendee fees, and chase late payers automatically.',
-  offers: { '@type': 'Offer', price: '0', priceCurrency: 'GBP' },
-  featureList: [
-    'Create an event in under a minute (title, time, location, fee)',
-    'You become the event admin — full control over settings',
-    'Unique payment reference generated per event',
-    'Automatic payment matching via UK Open Banking',
-    'Chase emails for attendees who haven\'t paid',
-    'Free forever — no card required, no hidden upgrade',
-  ],
-  inLanguage: 'en-GB',
-};
-
 const ORG_LD = {
   '@context': 'https://schema.org',
-  '@type':    'Organization',
-  name:       'GrumpyWhales',
+  '@type':    'SportsClub',
+  name:       'GA Football Club',
   url:        'https://grumpywhales.com',
-  logo:       'https://grumpywhales.com/logo.png',
+  sport:      'Association Football',
   description:
-    'GrumpyWhales is a free tool for hosting paid events. Create an event, set a fee, share with attendees, and get paid on time.',
+    'GA Football Club plays Friday night football at Kings House School sports ground. Mixed-ability, friendly, all welcome.',
+  location: {
+    '@type': 'Place',
+    name:    'Kings House School sports ground',
+  },
 };
 
 const FAQS = [
   {
-    q: 'What kind of events can I host on GrumpyWhales?',
-    a: 'Anything with a host, a date, a location, and an attendance fee — meet-ups, workshops, classes, dinners, courses, ticketed gatherings, community memberships. If you can describe it in a title and a fee, you can run it on GrumpyWhales.',
+    q: 'When and where do you play?',
+    a: 'Friday nights at Kings House School sports ground. Kick-off time and the joinable session for the week are shown on your dashboard once you sign in.',
   },
   {
-    q: 'How does the payment side work?',
-    a: 'When you create an event, we generate a unique payment reference (e.g. GW-EVT-ABC123). You share this reference with attendees. They pay you by bank transfer using the reference, and GrumpyWhales reconciles the incoming payment with the event automatically.',
+    q: 'What level of player are you looking for?',
+    a: 'Any. The club is mixed-ability — what we care about is that you turn up, play hard, and play fair. Beginners are welcome alongside experienced players.',
   },
   {
-    q: 'Is GrumpyWhales really free?',
-    a: 'Yes. Creating events, managing attendees, collecting fees and chase emails are all free. No card required to sign up, no monthly limit on events, no upgrade prompts. A paid tier with extras may come later but the core stays free.',
+    q: 'How do I sign up for a Friday?',
+    a: "Create an account, head to 'Join event', and request to attend the upcoming Friday. The club admin publishes the final list each week and you'll get an email when you're on it.",
   },
   {
-    q: 'Do I need a bank account in the UK?',
-    a: 'For automatic Open Banking matching, yes — a UK personal or business current account. You can still create events and track them manually without connecting a bank.',
+    q: 'Is there a fee?',
+    a: "Yes — a small per-session fee to cover pitch hire. The amount and your payment status show up on your dashboard once you're on the final list.",
   },
   {
-    q: 'Who is the admin of an event I create?',
-    a: 'You are. Whoever creates the event is the only admin and the only person who can edit its details, change its status, or delete it.',
+    q: 'Can I bring a friend?',
+    a: "Of course. Ask them to create an account and request to join — the more the merrier (as long as we don't blow past the pitch capacity).",
   },
 ];
 
@@ -72,27 +54,26 @@ export default async function Home() {
   const signedIn = !!session?.user?.profileId;
   return (
     <main className="min-h-screen">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(SOFTWARE_LD) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_LD) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_LD) }} />
 
       <nav className="max-w-6xl mx-auto px-6 py-5 flex justify-between items-center">
         <Link href="/" className="flex items-center gap-2 text-xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)', textDecoration: 'none' }}>
-          <Image src="/logo.png" alt="GrumpyWhales logo" width={36} height={36} priority style={{ borderRadius: 6 }} />
-          GrumpyWhales
+          <Image src="/logo.png" alt="GA Football Club" width={36} height={36} priority style={{ borderRadius: 6 }} />
+          GA Football Club
         </Link>
         <div className="flex items-center gap-4 text-sm">
-          <Link href="#how-it-works" className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)] hidden sm:inline">How it works</Link>
-          <Link href="#faq"          className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)] hidden sm:inline">FAQ</Link>
+          <Link href="#what-to-expect" className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)] hidden sm:inline">What to expect</Link>
+          <Link href="#faq"            className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)] hidden sm:inline">FAQ</Link>
           {signedIn ? (
             <Link href="/dashboard/events" className="px-5 py-2 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}>
-              My events →
+              Open dashboard →
             </Link>
           ) : (
             <>
               <Link href="/login"    className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)]">Log in</Link>
               <Link href="/register" className="px-5 py-2 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
-                Get started
+                Join the club
               </Link>
             </>
           )}
@@ -101,45 +82,46 @@ export default async function Home() {
 
       {/* HERO */}
       <section className="pitch-bg">
-        <div className="max-w-4xl mx-auto px-6 pt-24 pb-12 text-center">
+        <div className="max-w-4xl mx-auto px-6 pt-24 pb-16 text-center">
           <div className="inline-block px-3 py-1 rounded-full text-xs font-bold mb-6" style={{ backgroundColor: 'var(--color-yellow)', color: 'var(--color-dark)', letterSpacing: '0.06em' }}>
-            FREE · NO CARD REQUIRED
+            FRIDAY NIGHT FOOTBALL
           </div>
           <h1 className="text-5xl sm:text-6xl font-bold leading-tight mb-6" style={{ fontFamily: 'var(--font-display)' }}>
-            Create an event.<br />
-            <span style={{ color: 'var(--color-accent)' }}>Get paid on time.</span>
+            GA Football Club
           </h1>
-          <p className="text-lg text-[color:var(--color-muted)] max-w-2xl mx-auto mb-10">
-            GrumpyWhales lets you set up a paid event in under a minute, share it with attendees,
-            and collect their fees without chasing. You stay the admin. We do the matching.
+          <p className="text-lg sm:text-xl mb-3" style={{ color: 'var(--color-fg)' }}>
+            Friday night, <strong>Kings House School sports ground</strong>.
+          </p>
+          <p className="text-2xl sm:text-3xl font-bold mb-10" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)' }}>
+            Enjoy football. Enjoy friendship.
           </p>
           <Link href={signedIn ? '/dashboard/events' : '/register'} className="inline-block px-8 py-3 rounded-full font-medium text-base" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}>
-            {signedIn ? 'Open my events →' : "Create your first event — it's free →"}
+            {signedIn ? 'Open dashboard →' : 'Join the club →'}
           </Link>
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
-      <section id="how-it-works" className="max-w-5xl mx-auto px-6 py-16">
+      {/* WHAT TO EXPECT */}
+      <section id="what-to-expect" className="max-w-5xl mx-auto px-6 py-16">
         <h2 className="text-3xl font-semibold mb-12 text-center" style={{ fontFamily: 'var(--font-display)' }}>
-          How it works
+          What to expect
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {[
             {
               n: '1',
-              title: 'Create an event',
-              body: 'Title, description, time, location, fee. Sixty seconds. You are now the event admin.',
+              title: 'Friday night kick-offs',
+              body: 'Every Friday evening. Come straight from work, leave with a smile and tired legs.',
             },
             {
               n: '2',
-              title: 'Share the reference',
-              body: 'We generate a unique payment reference per event. Attendees use it when they transfer their fee.',
+              title: 'Kings House sports ground',
+              body: 'A proper pitch under the lights. Showers and changing rooms on site.',
             },
             {
               n: '3',
-              title: 'Get paid, on time',
-              body: 'GrumpyWhales matches incoming bank transfers to the event and flags anyone who hasn\'t paid yet.',
+              title: 'Mixed-ability, all welcome',
+              body: 'Friendly games. Whether you used to play county or just love a kick-around, you fit in.',
             },
           ].map(step => (
             <div key={step.n} className="p-6 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
@@ -153,27 +135,23 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* WHO IT'S FOR */}
+      {/* HOW IT WORKS */}
       <section className="max-w-5xl mx-auto px-6 py-16">
         <h2 className="text-3xl font-semibold mb-3 text-center" style={{ fontFamily: 'var(--font-display)' }}>
-          Built for hosts who hate chasing
+          How to join a Friday
         </h2>
         <p className="text-center mb-12 max-w-2xl mx-auto" style={{ color: 'var(--color-muted)' }}>
-          If you organise something people pay to attend, GrumpyWhales is for you.
+          Three steps. No app to install, no group chats to chase.
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
           {[
-            'Meet-ups & community events',
-            'Workshops & classes',
-            'Supper clubs & dinners',
-            'Coaching cohorts',
-            'Co-working days',
-            'Memberships',
-            'Tours & retreats',
-            'Sports & fitness groups',
+            { title: 'Create an account',     body: 'Email + password, or sign in with Google. Takes thirty seconds.' },
+            { title: 'Request the next Friday', body: "From 'Join event', tap Request to attend on the upcoming session." },
+            { title: 'Get confirmed & pay',   body: "We'll email you when you're on the final list, then settle the session fee right from your dashboard." },
           ].map(item => (
-            <div key={item} className="p-3 rounded-xl text-center" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', color: 'var(--color-fg)' }}>
-              {item}
+            <div key={item.title} className="p-5 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
+              <h3 className="text-base font-semibold mb-2" style={{ fontFamily: 'var(--font-display)' }}>{item.title}</h3>
+              <p style={{ color: 'var(--color-muted)' }}>{item.body}</p>
             </div>
           ))}
         </div>
@@ -198,16 +176,16 @@ export default async function Home() {
       {/* CTA */}
       <section className="max-w-3xl mx-auto px-6 py-20 text-center">
         <h2 className="text-4xl font-semibold mb-6" style={{ fontFamily: 'var(--font-display)' }}>
-          Stop chasing.<br />
-          <span style={{ color: 'var(--color-accent)' }}>Start hosting.</span>
+          See you<br />
+          <span style={{ color: 'var(--color-accent)' }}>on Friday night.</span>
         </h2>
         <Link href={signedIn ? '/dashboard/events' : '/register'} className="inline-block px-8 py-3 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}>
-          {signedIn ? 'Open my events →' : 'Create your first event →'}
+          {signedIn ? 'Open dashboard →' : 'Join the club →'}
         </Link>
       </section>
 
       <footer className="max-w-6xl mx-auto px-6 py-10 text-sm flex flex-col sm:flex-row justify-between items-center gap-3" style={{ color: 'var(--color-muted)', borderTop: '1px solid var(--color-border)' }}>
-        <p>© 2026 GrumpyWhales</p>
+        <p>© 2026 GA Football Club</p>
         <div className="flex gap-5">
           <Link href="/privacy" style={{ color: 'var(--color-muted)' }}>Privacy</Link>
           <Link href="/terms"   style={{ color: 'var(--color-muted)' }}>Terms</Link>
