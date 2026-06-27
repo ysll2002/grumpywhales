@@ -133,6 +133,50 @@ export function occurrenceCancelledEmail(opts: OccurrenceCancelledOpts) {
   return { subject, text, html };
 }
 
+// ─── Platform admin invite email ─────────────────────────────────────────────
+// Sent to anyone added via the Settings → Platform admins form. Tells the
+// invitee they've been granted admin rights and where to go next.
+type AdminInviteOpts = {
+  invitedEmail:  string;
+  invitedByName: string | null;
+  dashboardUrl:  string;
+};
+
+export function adminInviteEmail(opts: AdminInviteOpts) {
+  const { invitedEmail, invitedByName, dashboardUrl } = opts;
+  const byline = invitedByName ? `${invitedByName} has added you` : 'You have been added';
+
+  const subject = `Welcome to admin of GrumpyWhales`;
+
+  const text = [
+    `Hi,`,
+    ``,
+    `${byline} as an admin on GrumpyWhales.`,
+    ``,
+    `You can now create events, publish attendee lists, and invite other admins.`,
+    `Sign in with ${invitedEmail} at:`,
+    dashboardUrl,
+    ``,
+    `— GrumpyWhales`,
+  ].join('\n');
+
+  const html = `<!doctype html><html><body style="font-family:-apple-system,system-ui,sans-serif;background:#FAF7F0;padding:24px;color:#0F1A14;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #E5E2D8;border-radius:16px;padding:28px;">
+    <h1 style="margin:0 0 16px 0;font-size:22px;color:#0A4D2E;">Welcome to admin of GrumpyWhales</h1>
+    <p style="margin:0 0 12px 0;">Hi,</p>
+    <p style="margin:0 0 12px 0;">${escapeHtml(byline)} as an admin on GrumpyWhales.</p>
+    <p style="margin:0 0 18px 0;">You can now create events, publish attendee lists, and invite other admins.</p>
+    <p style="margin:0 0 18px 0;">Sign in with <strong>${escapeHtml(invitedEmail)}</strong>:</p>
+    <p style="margin:0 0 18px 0;">
+      <a href="${escapeHtml(dashboardUrl)}" style="display:inline-block;background:#00A859;color:#fff;text-decoration:none;padding:10px 18px;border-radius:999px;font-weight:600;">Open the dashboard →</a>
+    </p>
+    <p style="margin:0;color:#6B6B6B;font-size:13px;">— GrumpyWhales</p>
+  </div>
+</body></html>`;
+
+  return { subject, text, html };
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')

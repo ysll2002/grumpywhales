@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { isPlatformAdmin } from '@/lib/platform-admin';
+import { sendEmail } from '@/lib/email';
+import { adminInviteEmail } from '@/lib/email-templates';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -25,6 +27,22 @@ export async function POST(req: NextRequest) {
       { onConflict: 'email', ignoreDuplicates: true },
     );
   if (error) return NextResponse.json({ error: 'insert_failed', detail: error.message }, { status: 500 });
+
+  // Fire-and-forget welcome email — log but don't fail the invite if Resend
+  // is misconfigured (the admin can resend manually by re-adding the row).
+  try {
+    const { data: inviter } = await supabase
+      .from('profiles').select('name').eq('id', session.user.profileId).maybeSingle();
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://grumpywhales.com';
+    const { subject, text, html } = adminInviteEmail({
+      invitedEmail:  email,
+      invitedByName: inviter?.name ?? null,
+      dashboardUrl:  `${baseUrl}/dashboard/manage`,
+    });
+    await sendEmail({ to: email, subject, text, html });
+  } catch (err) {
+    console.error('[admins POST] invite email failed', err);
+  }
 
   return NextResponse.json({ ok: true, email });
 }
