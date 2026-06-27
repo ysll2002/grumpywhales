@@ -28,8 +28,11 @@ export async function POST(req: NextRequest) {
     );
   if (error) return NextResponse.json({ error: 'insert_failed', detail: error.message }, { status: 500 });
 
-  // Fire-and-forget welcome email — log but don't fail the invite if Resend
-  // is misconfigured (the admin can resend manually by re-adding the row).
+  // Welcome email. The admin row is in place either way (we return ok=true),
+  // but surface the email result so the UI can show "sent" / "send failed
+  // — fix RESEND_API_KEY / verify the sender domain".
+  let email_sent = false;
+  let email_error: string | null = null;
   try {
     const { data: inviter } = await supabase
       .from('profiles').select('name').eq('id', session.user.profileId).maybeSingle();
@@ -40,11 +43,13 @@ export async function POST(req: NextRequest) {
       dashboardUrl:  `${baseUrl}/dashboard/manage`,
     });
     await sendEmail({ to: email, subject, text, html });
+    email_sent = true;
   } catch (err) {
+    email_error = err instanceof Error ? err.message : 'unknown';
     console.error('[admins POST] invite email failed', err);
   }
 
-  return NextResponse.json({ ok: true, email });
+  return NextResponse.json({ ok: true, email, email_sent, email_error });
 }
 
 export async function DELETE(req: NextRequest) {

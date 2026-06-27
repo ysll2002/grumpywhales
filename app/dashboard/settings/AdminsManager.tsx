@@ -30,11 +30,16 @@ export default function AdminsManager({ initial }: { initial: AdminRow[] }) {
       setError(j.detail ?? j.error ?? 'invite_failed');
       return;
     }
+    const j = await res.json().catch(() => ({})) as { email_sent?: boolean; email_error?: string | null };
     if (!rows.some(r => r.email.toLowerCase() === trimmed)) {
       setRows([...rows, { email: trimmed, created_at: new Date().toISOString() }]);
     }
     setEmail('');
-    setInfo(`${trimmed} can now host events.`);
+    if (j.email_sent) {
+      setInfo(`${trimmed} added — welcome email sent.`);
+    } else {
+      setInfo(`${trimmed} added, but the welcome email failed to send${j.email_error ? `: ${j.email_error}` : ''}. Check RESEND_API_KEY / verified sender domain.`);
+    }
   }
 
   async function remove(target: string) {
