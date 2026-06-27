@@ -108,20 +108,51 @@ export function occurrenceDate(iso: string): string {
 export const DOW_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 export const DOW_LABELS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+// Convert a wall-clock moment in Europe/London (DST-aware) to a UTC Date.
+// Works by sampling Intl in the London timezone and reading back the offset
+// the runtime would apply for that exact instant — so 22:00 in summer
+// becomes 21:00Z, and 22:00 in winter stays 22:00Z.
+function londonWallClockToUtc(y: number, m: number, d: number, h: number, min: number): Date {
+  const guess = new Date(Date.UTC(y, m - 1, d, h, min));
+  const fmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    year:    'numeric', month: '2-digit', day:    '2-digit',
+    hour:    '2-digit', minute: '2-digit', hour12: false,
+  });
+  const parts = Object.fromEntries(fmt.formatToParts(guess).map(p => [p.type, p.value]));
+  const londonAsUtcMs = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour) % 24,
+    Number(parts.minute),
+  );
+  const offsetMs = londonAsUtcMs - guess.getTime();
+  return new Date(guess.getTime() - offsetMs);
+}
+
 // For a weekly event with a (dow, time) sign-up window, find the moment at
-// which sign-ups for the given occurrence open. Walk back day-by-day from the
-// occurrence with the time-of-day fixed, until we land on the right weekday
-// strictly before the occurrence (max 7 iterations).
+// which sign-ups for the given occurrence open. The time-of-day is treated
+// as Europe/London wall-clock so DST is honoured (e.g. 22:00 London is 21:00Z
+// in BST and 22:00Z in GMT).
 export function signupOpensAt(occurrenceIso: string, dow: number, hhmm: string): Date {
   const [h, m] = hhmm.split(':').map(Number);
-  const occ = new Date(occurrenceIso).getTime();
-  const open = new Date(occurrenceIso);
-  open.setUTCHours(h, m, 0, 0);
+  const occUtc = new Date(occurrenceIso);
+  const occMs  = occUtc.getTime();
+  const cursor = new Date(occUtc);
   for (let i = 0; i < 8; i++) {
-    if (open.getUTCDay() === dow && open.getTime() < occ) return open;
-    open.setUTCDate(open.getUTCDate() - 1);
+    if (cursor.getUTCDay() === dow) {
+      const candidate = londonWallClockToUtc(
+        cursor.getUTCFullYear(),
+        cursor.getUTCMonth() + 1,
+        cursor.getUTCDate(),
+        h, m,
+      );
+      if (candidate.getTime() < occMs) return candidate;
+    }
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
   }
-  return open;
+  return new Date(occMs);
 }
 
 // Returns whether a given occurrence is currently accepting sign-ups. Only

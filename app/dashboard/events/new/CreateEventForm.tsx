@@ -174,7 +174,7 @@ export default function CreateEventForm() {
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Open time <span style={{ color: 'var(--color-muted)', fontWeight: 400 }}>(UTC)</span></label>
+            <label style={labelStyle}>Open time <span style={{ color: 'var(--color-muted)', fontWeight: 400 }}>(London — DST aware)</span></label>
             <input type="time" value={openTime} onChange={e => setOpenTime(e.target.value)} style={inputStyle} />
           </div>
         </div>
