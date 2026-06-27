@@ -164,8 +164,6 @@ export default async function AttendeesPage({
         publishedAt={ev.attendees_published_at}
         cancelled={(ev.cancelled_dates ?? []).includes(selected)}
         isRecurring={ev.recurrence !== 'none'}
-        currentProfileId={session.user.profileId}
-        signupMode={ev.signup_mode}
         initial={initial}
       />
     </div>
