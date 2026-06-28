@@ -387,13 +387,6 @@ export default function AttendeesTable({
             {selected.size === 0 ? 'Tick rows to apply a bulk action.' : `${selected.size} selected`}
           </span>
           <div className="flex items-center gap-2 flex-wrap ml-auto">
-            <BulkBtn label="Mark accepted" onClick={() => bulkPatch({ status: 'accepted' })} disabled={selected.size === 0 || bulkBusy} />
-            <BulkBtn label="Mark pending"  onClick={() => bulkPatch({ status: 'pending'  })} disabled={selected.size === 0 || bulkBusy} />
-            <BulkBtn label="Mark paid"     onClick={() => bulkPatch({ payment_status: 'paid'   })} disabled={selected.size === 0 || bulkBusy} />
-            <BulkBtn label="Mark unpaid"   onClick={() => bulkPatch({ payment_status: 'unpaid' })} disabled={selected.size === 0 || bulkBusy} />
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap basis-full">
             <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--color-muted)' }}>Team colour</span>
             {TEAM_COLOURS.map(c => (
               <button
@@ -426,6 +419,13 @@ export default function AttendeesTable({
             >
               N/A
             </button>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap basis-full justify-end">
+            <BulkBtn label="Mark accepted" onClick={() => bulkPatch({ status: 'accepted' })} disabled={selected.size === 0 || bulkBusy} />
+            <BulkBtn label="Mark pending"  onClick={() => bulkPatch({ status: 'pending'  })} disabled={selected.size === 0 || bulkBusy} />
+            <BulkBtn label="Mark paid"     onClick={() => bulkPatch({ payment_status: 'paid'   })} disabled={selected.size === 0 || bulkBusy} />
+            <BulkBtn label="Mark unpaid"   onClick={() => bulkPatch({ payment_status: 'unpaid' })} disabled={selected.size === 0 || bulkBusy} />
           </div>
         </div>
       )}
