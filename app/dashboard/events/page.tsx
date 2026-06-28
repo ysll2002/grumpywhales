@@ -16,27 +16,54 @@ async function confirmPaymentFromSession(sessionId: string, viewerProfileId: str
   try {
     const sess = await stripe().checkout.sessions.retrieve(sessionId);
     if (sess.payment_status !== 'paid') return;
-    const signupId = sess.client_reference_id;
-    if (!signupId) return;
     const paymentIntentId = typeof sess.payment_intent === 'string' ? sess.payment_intent : null;
-    const { data } = await supabase
-      .from('event_signups')
-      .update({
-        payment_status:           'paid',
-        paid_at:                  new Date().toISOString(),
-        stripe_payment_intent_id: paymentIntentId,
-        updated_at:               new Date().toISOString(),
-      })
-      .eq('id', signupId)
-      .eq('profile_id', viewerProfileId)
-      .eq('payment_status', 'unpaid')
-      .select('id')
-      .maybeSingle();
+    const nowIso = new Date().toISOString();
+
+    // Bulk: client_reference_id = 'bulk:<profileId>' and metadata.signup_ids
+    // is a CSV of the rows to mark paid. Single: client_reference_id is just
+    // the signup id.
+    const cref = sess.client_reference_id ?? '';
+    let touched = 0;
+    if (cref.startsWith('bulk:')) {
+      const profileFromRef = cref.slice('bulk:'.length);
+      if (profileFromRef !== viewerProfileId) return;
+      const ids = (sess.metadata?.signup_ids ?? '').split(',').map(s => s.trim()).filter(Boolean);
+      if (ids.length === 0) return;
+      const { data } = await supabase
+        .from('event_signups')
+        .update({
+          payment_status:           'paid',
+          paid_at:                  nowIso,
+          stripe_payment_intent_id: paymentIntentId,
+          updated_at:               nowIso,
+        })
+        .in('id', ids)
+        .eq('profile_id', viewerProfileId)
+        .eq('payment_status', 'unpaid')
+        .select('id');
+      touched = data?.length ?? 0;
+    } else if (cref) {
+      const { data } = await supabase
+        .from('event_signups')
+        .update({
+          payment_status:           'paid',
+          paid_at:                  nowIso,
+          stripe_payment_intent_id: paymentIntentId,
+          updated_at:               nowIso,
+        })
+        .eq('id', cref)
+        .eq('profile_id', viewerProfileId)
+        .eq('payment_status', 'unpaid')
+        .select('id')
+        .maybeSingle();
+      touched = data ? 1 : 0;
+    }
+
     // Bust the dashboard layout cache so the sidebar Unpaid badge
     // re-counts on this same render — the page itself reads fresh data,
     // but the layout segment would otherwise stay on its previous value
     // until you fully reloaded.
-    if (data) revalidatePath('/dashboard', 'layout');
+    if (touched > 0) revalidatePath('/dashboard', 'layout');
   } catch (err) {
     console.error('[dashboard/events] stripe verify failed', err);
   }

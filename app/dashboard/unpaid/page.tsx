@@ -2,6 +2,7 @@ import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { formatEventDateTime, formatMoney, type Event } from '@/lib/events';
 import PayButton from './PayButton';
+import PayAllButton from './PayAllButton';
 
 type UnpaidRow = {
   id:              string;
@@ -76,12 +77,18 @@ export default async function UnpaidPage() {
         <>
           <div className="p-5 rounded-2xl mb-6 flex items-center justify-between flex-wrap gap-3"
             style={{ backgroundColor: '#FEE2E2', border: '1px solid var(--color-red)' }}>
-            <p className="text-sm" style={{ color: 'var(--color-red)' }}>
-              <strong>Total outstanding:</strong> {totalLabel}
-            </p>
-            <p className="text-xs" style={{ color: 'var(--color-red)' }}>
-              {rows.length} session{rows.length === 1 ? '' : 's'}
-            </p>
+            <div>
+              <p className="text-sm" style={{ color: 'var(--color-red)' }}>
+                <strong>Total outstanding:</strong> {totalLabel}
+              </p>
+              <p className="text-xs mt-1" style={{ color: 'var(--color-red)' }}>
+                {rows.length} session{rows.length === 1 ? '' : 's'}
+              </p>
+            </div>
+            {/* Single-currency Pay-all flow. Multi-currency totals fall back
+                to per-row payment — the server route returns mixed_currencies
+                in that case so the button surfaces an inline error. */}
+            <PayAllButton totalLabel={totalLabel} count={rows.length} />
           </div>
 
           {upcoming.length > 0 && <Section title="Upcoming" items={upcoming} />}
