@@ -376,9 +376,9 @@ export default function AttendeesTable({
             {selected.size === 0 ? 'Tick rows to apply a bulk action.' : `${selected.size} selected`}
           </span>
           <div className="flex items-center gap-2 flex-wrap ml-auto">
-            <BulkBtn label="Mark accepted" onClick={() => bulkPatch({ status: 'accepted' })} disabled={selected.size === 0 || bulkBusy} primary />
+            <BulkBtn label="Mark accepted" onClick={() => bulkPatch({ status: 'accepted' })} disabled={selected.size === 0 || bulkBusy} />
             <BulkBtn label="Mark pending"  onClick={() => bulkPatch({ status: 'pending'  })} disabled={selected.size === 0 || bulkBusy} />
-            <BulkBtn label="Mark paid"     onClick={() => bulkPatch({ payment_status: 'paid'   })} disabled={selected.size === 0 || bulkBusy} primary />
+            <BulkBtn label="Mark paid"     onClick={() => bulkPatch({ payment_status: 'paid'   })} disabled={selected.size === 0 || bulkBusy} />
             <BulkBtn label="Mark unpaid"   onClick={() => bulkPatch({ payment_status: 'unpaid' })} disabled={selected.size === 0 || bulkBusy} />
             <button
               type="button"
@@ -536,11 +536,10 @@ export default function AttendeesTable({
   );
 }
 
-function BulkBtn({ label, onClick, disabled, primary }: {
+function BulkBtn({ label, onClick, disabled }: {
   label:     string;
   onClick:   () => void;
   disabled?: boolean;
-  primary?:  boolean;
 }) {
   return (
     <button
@@ -549,9 +548,9 @@ function BulkBtn({ label, onClick, disabled, primary }: {
       disabled={disabled}
       className="px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-40"
       style={{
-        backgroundColor: primary ? 'var(--color-accent)' : 'var(--color-bg)',
-        color:           primary ? '#FFFFFF'            : 'var(--color-fg)',
-        border:          primary ? 'none'               : '1px solid var(--color-border)',
+        backgroundColor: '#2563EB',
+        color:           '#FFFFFF',
+        border:          'none',
         cursor:          disabled ? 'not-allowed' : 'pointer',
       }}
     >
