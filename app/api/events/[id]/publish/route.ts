@@ -3,11 +3,13 @@ import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { isEventAdmin } from '@/lib/event-admin';
 import { sendEmail } from '@/lib/email';
-import { attendeeListPublishEmail } from '@/lib/email-templates';
+import { attendeeListPublishEmail, type RosterEntry } from '@/lib/email-templates';
 
 type SignupForEmail = {
-  status:    'accepted' | 'waitlisted' | 'declined' | 'pending';
-  profiles:  { name: string | null; email: string } | null;
+  status:       'accepted' | 'waitlisted' | 'declined' | 'pending';
+  signed_up_at: string;
+  team_colour:  string | null;
+  profiles:     { name: string | null; email: string } | null;
 };
 
 // POST /api/events/:id/publish — emails every non-cancelled attendee for the
@@ -41,11 +43,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // Signups for this specific occurrence.
   const { data: signupRows } = await supabase
     .from('event_signups')
-    .select('status, profiles(name, email)')
+    .select('status, signed_up_at, team_colour, profiles(name, email)')
     .eq('event_id', eventId)
     .eq('occurrence_date', body.occurrence_date)
-    .neq('status', 'cancelled');
+    .neq('status', 'cancelled')
+    .order('signed_up_at', { ascending: true });
   const signups = (signupRows ?? []) as unknown as SignupForEmail[];
+
+  // Shared team sheet that goes into every email, so all players see the
+  // same roster regardless of their own status.
+  const roster: RosterEntry[] = signups.map(s => ({
+    name:         s.profiles?.name ?? null,
+    signed_up_at: s.signed_up_at,
+    status:       s.status,
+    team_colour:  s.team_colour,
+  }));
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://grumpywhales.com';
   const eventUrl = `${baseUrl}/dashboard/events`;
@@ -68,6 +80,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       event:        eventForEmail,
       hostName,
       eventUrl,
+      roster,
     });
     await sendEmail({ to: s.profiles.email, subject, text, html });
     return { sent: true };
