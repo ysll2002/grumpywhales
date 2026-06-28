@@ -283,20 +283,17 @@ function AttendingCard({
         {cancelled ? (
           <Badge tone={{ bg: '#FEE2E2', fg: 'var(--color-red)' }}>Cancelled by host</Badge>
         ) : signup ? (() => {
-          const sessionPublished = (event.published_occurrence_dates ?? []).includes(occurrenceDate);
           // Payment is only relevant once the attendee is on the final list.
-          // Pending = no payment due → no badge, no Pay button.
+          // Pending = no payment due → no badge, no Pay button. We no longer
+          // gate on the host publishing the date — once you're accepted you
+          // can pay any time, matching the Unpaid page behaviour.
           const isAccepted = signup.status === 'accepted';
-          const showPayBadge =
-            isAccepted &&
-            Number(event.fee_amount) > 0 &&
-            (signup.payment_status === 'paid' || sessionPublished);
+          const showPayBadge = isAccepted && Number(event.fee_amount) > 0;
           const showPayButton =
             isAccepted &&
             !past &&
             Number(event.fee_amount) > 0 &&
-            signup.payment_status === 'unpaid' &&
-            sessionPublished;
+            signup.payment_status === 'unpaid';
           const showCancel =
             !past && signup.status !== 'cancelled' && signup.status !== 'declined';
 
