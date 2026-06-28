@@ -21,9 +21,13 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Subtle pitch-line decoration behind hero */
+/* Hero: sunset Friday-night pitch photo, with a cream wash so the dark
+   headline text stays readable. Stack: tint → photo. */
 .pitch-bg {
   background-image:
-    repeating-linear-gradient(0deg, rgba(0,168,89,0.06) 0 1px, transparent 1px 80px),
-    repeating-linear-gradient(90deg, rgba(0,168,89,0.04) 0 1px, transparent 1px 80px);
+    linear-gradient(rgba(250, 247, 240, 0.55), rgba(250, 247, 240, 0.78)),
+    url('/hero-pitch.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
