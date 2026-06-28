@@ -467,14 +467,23 @@ export default function AttendeesTable({
                 </Td>
                 <Td muted>{new Date(r.signed_up_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</Td>
                 <Td>
-                  <select
-                    value={r.status}
-                    onChange={e => changeStatus(r.signup_id, e.target.value as SignupStatus)}
-                    className="text-xs uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold cursor-pointer"
-                    style={{ backgroundColor: STATUS_TONE[r.status].bg, color: STATUS_TONE[r.status].fg, border: 'none' }}
-                  >
-                    {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
+                  {editMode ? (
+                    <select
+                      value={r.status}
+                      onChange={e => changeStatus(r.signup_id, e.target.value as SignupStatus)}
+                      className="text-xs uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold cursor-pointer"
+                      style={{ backgroundColor: STATUS_TONE[r.status].bg, color: STATUS_TONE[r.status].fg, border: 'none' }}
+                    >
+                      {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  ) : (
+                    <span
+                      className="text-xs uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold inline-block"
+                      style={{ backgroundColor: STATUS_TONE[r.status].bg, color: STATUS_TONE[r.status].fg }}
+                    >
+                      {r.status}
+                    </span>
+                  )}
                 </Td>
                 <Td>
                   {r.status === 'pending' ? (
