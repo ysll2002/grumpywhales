@@ -105,7 +105,8 @@ export default async function ManageEventsPage({ searchParams }: { searchParams:
           <Stat label="Total sign-ups"   value={signedUpCount} />
           <Stat label="Accepted"         value={acceptedCount} />
           <Stat label="Paid"             value={paidCount} tone="good" />
-          <Stat label="Payment due"      value={unpaidCount} tone={unpaidCount > 0 ? 'bad' : undefined} />
+          <Stat label="Payment due"      value={unpaidCount} tone={unpaidCount > 0 ? 'bad' : undefined}
+                href="/dashboard/manage/payment-due" />
         </div>
       </section>
 
@@ -171,12 +172,24 @@ function Badge({ tone, children }: { tone: { bg: string; fg: string }; children:
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: number | string; tone?: 'good' | 'bad' }) {
+function Stat({ label, value, tone, href }: { label: string; value: number | string; tone?: 'good' | 'bad'; href?: string }) {
   const fg = tone === 'good' ? 'var(--color-accent-dk)' : tone === 'bad' ? 'var(--color-red)' : undefined;
-  return (
-    <div className="p-5 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
-      <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--color-muted)' }}>{label}</p>
+  const body = (
+    <>
+      <p className="text-[10px] uppercase tracking-wider flex items-center gap-1" style={{ color: 'var(--color-muted)' }}>
+        {label}{href && <span aria-hidden>›</span>}
+      </p>
       <p className="text-2xl font-semibold mt-1" style={{ fontFamily: 'var(--font-display)', color: fg }}>{value}</p>
+    </>
+  );
+  return href ? (
+    <Link href={href} className="p-5 rounded-2xl block hover:opacity-90 transition-opacity"
+      style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', color: 'var(--color-fg)', textDecoration: 'none' }}>
+      {body}
+    </Link>
+  ) : (
+    <div className="p-5 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
+      {body}
     </div>
   );
 }
