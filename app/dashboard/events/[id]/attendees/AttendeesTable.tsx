@@ -339,7 +339,7 @@ export default function AttendeesTable({
                 onClick={exitEditMode}
                 disabled={bulkBusy}
                 className="px-5 py-2.5 rounded-full text-sm font-medium disabled:opacity-50"
-                style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-fg)', border: '1px solid var(--color-border)', cursor: 'pointer' }}
+                style={{ backgroundColor: '#2563EB', color: '#FFFFFF', border: 'none', cursor: 'pointer' }}
               >
                 Done editing
               </button>
