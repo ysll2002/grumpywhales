@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDialog } from '@/components/Dialog';
 
 type Props = {
   eventId:        string;
@@ -12,9 +13,17 @@ export default function CancelSignupButton({ eventId, occurrenceDate }: Props) {
   const router = useRouter();
   const [busy,  setBusy]  = useState(false);
   const [error, setError] = useState('');
+  const { confirm, dialog } = useDialog();
 
   async function cancel() {
-    if (!confirm('Cancel your sign-up for this session?')) return;
+    const ok = await confirm({
+      title:        'Cancel sign-up?',
+      message:      'Cancel your sign-up for this session?',
+      confirmLabel: 'Cancel sign-up',
+      cancelLabel:  'Keep it',
+      tone:         'danger',
+    });
+    if (!ok) return;
     setBusy(true); setError('');
     const res = await fetch(`/api/events/${eventId}/signup?occurrence_date=${occurrenceDate}`, { method: 'DELETE' });
     if (!res.ok) {
@@ -28,6 +37,7 @@ export default function CancelSignupButton({ eventId, occurrenceDate }: Props) {
 
   return (
     <div className="flex flex-col items-end gap-1">
+      {dialog}
       <button
         type="button"
         onClick={cancel}

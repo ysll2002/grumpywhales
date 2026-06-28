@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SignupStatus, PaymentStatus } from '@/lib/signups';
+import { useDialog } from '@/components/Dialog';
 
 export type AttendeeRow = {
   signup_id:         string;
@@ -67,6 +68,7 @@ export default function AttendeesTable({
   const [lastPub,     setLastPub]     = useState<string | null>(publishedAt);
   const [cancelBusy,  setCancelBusy]  = useState(false);
   const [isCancelled, setIsCancelled] = useState(cancelled);
+  const { confirm, dialog: confirmDialog } = useDialog();
 
   // null = use the manual roster order (sort_order with signed_up fallback).
   type SortKey = 'signed_up' | 'past_3mo' | 'lifetime';
@@ -111,7 +113,12 @@ export default function AttendeesTable({
     const refundNote = paidCount
       ? `\n\nHeads-up: ${paidCount} attendee${paidCount === 1 ? '' : 's'} already paid. They'll be emailed about the cancellation, but you'll need to issue refunds manually in your Stripe dashboard.`
       : '';
-    const ok = confirm(`Cancel this session only? Other sessions in the series are unaffected. ${rows.length} attendee${rows.length === 1 ? '' : 's'} will be emailed.${refundNote}`);
+    const ok = await confirm({
+      title:        'Cancel this session?',
+      message:      `Cancel this session only? Other sessions in the series are unaffected. ${rows.length} attendee${rows.length === 1 ? '' : 's'} will be emailed.${refundNote}`,
+      confirmLabel: 'Cancel session',
+      tone:         'danger',
+    });
     if (!ok) return;
 
     setCancelBusy(true); setError('');
@@ -131,7 +138,12 @@ export default function AttendeesTable({
   }
 
   async function uncancelOccurrence() {
-    if (!confirm('Bring this session back? Existing sign-ups will need to be re-confirmed by you.')) return;
+    const ok = await confirm({
+      title:        'Restore this session?',
+      message:      'Bring this session back? Existing sign-ups will need to be re-confirmed by you.',
+      confirmLabel: 'Restore',
+    });
+    if (!ok) return;
     setCancelBusy(true); setError('');
     const res = await fetch(`/api/events/${eventId}/cancel-occurrence`, {
       method: 'DELETE',
@@ -157,9 +169,11 @@ export default function AttendeesTable({
       `${rows.filter(r => r.status === 'declined').length} declined`,
       pendingCount ? `${pendingCount} still pending (will also be emailed)` : '',
     ].filter(Boolean).join(', ');
-    const ok = confirm(
-      `Send a notification email to every non-cancelled attendee?\n\n${breakdown}\n\nThey'll see their final status and the event details.`
-    );
+    const ok = await confirm({
+      title:        'Send acceptances?',
+      message:      `Send a notification email to every non-cancelled attendee?\n\n${breakdown}\n\nThey'll see their final status and the event details.`,
+      confirmLabel: 'Send emails',
+    });
     if (!ok) return;
 
     setPublishing(true);
@@ -196,7 +210,13 @@ export default function AttendeesTable({
 
   async function removeSignup(signupId: string, name: string | null) {
     const who = name ?? 'this attendee';
-    if (!confirm(`Remove ${who} from this session? They'll disappear from the list and won't see this session in their dashboard.`)) return;
+    const ok = await confirm({
+      title:        'Remove attendee?',
+      message:      `Remove ${who} from this session? They'll disappear from the list and won't see this session in their dashboard.`,
+      confirmLabel: 'Remove',
+      tone:         'danger',
+    });
+    if (!ok) return;
     const prev = rows;
     setRows(rs => rs.filter(r => r.signup_id !== signupId));
     setError('');
@@ -245,6 +265,7 @@ export default function AttendeesTable({
 
   return (
     <>
+      {confirmDialog}
       {isCancelled && (
         <div className="rounded-2xl px-5 py-3 mb-6 flex items-center justify-between flex-wrap gap-3"
           style={{ backgroundColor: '#FEE2E2', border: '1px solid var(--color-red)', color: 'var(--color-red)' }}>
@@ -335,7 +356,6 @@ export default function AttendeesTable({
               <SortableTh active={sortKey === 'lifetime'} onClick={() => toggleSort('lifetime')} title="Lifetime attendance for this event">
                 Lifetime{sortArrow('lifetime')}
               </SortableTh>
-              {eventStarted && <Th title="Did they attend on this event's date?">Attended</Th>}
               <Th>Order</Th>
               <Th>{' '}</Th>
             </tr>
@@ -384,27 +404,6 @@ export default function AttendeesTable({
                 </Td>
                 <Td><Rate attended={r.past_3mo_attended} total={r.past_3mo_total} /></Td>
                 <Td><Rate attended={r.lifetime_attended} total={r.lifetime_total} /></Td>
-                {eventStarted && (
-                  <Td>
-                    <button
-                      type="button"
-                      onClick={() => toggleAttendedToday(r.profile_id, r.attended_today)}
-                      className="text-xs px-2 py-1 rounded-full"
-                      style={{
-                        backgroundColor:
-                          r.attended_today === true  ? '#D1FAE5' :
-                          r.attended_today === false ? '#FEE2E2' : '#E5E7EB',
-                        color:
-                          r.attended_today === true  ? 'var(--color-accent-dk)' :
-                          r.attended_today === false ? 'var(--color-red)'      : '#374151',
-                        border: 'none', cursor: 'pointer',
-                      }}
-                      title="Click to cycle: not recorded → attended → no-show → not recorded"
-                    >
-                      {r.attended_today === true ? '✓ Attended' : r.attended_today === false ? '✗ No-show' : 'Not set'}
-                    </button>
-                  </Td>
-                )}
                 <Td>
                   <div className="flex gap-1">
                     <button type="button" onClick={() => swap(idx, -1)}
@@ -432,7 +431,7 @@ export default function AttendeesTable({
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={eventStarted ? 11 : 10} className="p-8 text-center text-sm" style={{ color: 'var(--color-muted)' }}>No-one has signed up yet.</td></tr>
+              <tr><td colSpan={10} className="p-8 text-center text-sm" style={{ color: 'var(--color-muted)' }}>No-one has signed up yet.</td></tr>
             )}
           </tbody>
         </table>

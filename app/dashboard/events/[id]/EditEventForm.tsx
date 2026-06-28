@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { type Event, type EventStatus, type EventRecurrence, type EventSignupMode, DOW_LABELS } from '@/lib/events';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
+import { useDialog } from '@/components/Dialog';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -65,6 +66,7 @@ export default function EditEventForm({ event }: { event: Event }) {
   const [deleting,    setDeleting]    = useState(false);
   const [error,       setError]       = useState('');
   const [savedFlash,  setSavedFlash]  = useState(false);
+  const { confirm, alert: alertDialog, dialog } = useDialog();
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,15 +112,22 @@ export default function EditEventForm({ event }: { event: Event }) {
     if (!preflight.ok || !preflightJson.ok) {
       setDeleting(false);
       const n = preflightJson.unpaid_count ?? 0;
-      alert(
-        n > 0
-          ? `Can't delete this event: ${n} attendee${n === 1 ? '' : 's'} still ha${n === 1 ? 's' : 've'} an unpaid sign-up. Refund or cancel those sign-ups first.`
-          : `Can't delete this event right now.`
-      );
+      await alertDialog({
+        title:   "Can't delete yet",
+        message: n > 0
+          ? `${n} attendee${n === 1 ? '' : 's'} still ha${n === 1 ? 's' : 've'} an unpaid sign-up. Refund or cancel those sign-ups first.`
+          : "Can't delete this event right now.",
+      });
       return;
     }
 
-    if (!confirm('Delete this event permanently? Anyone you sent the link to will no longer find it.')) {
+    const ok = await confirm({
+      title:        'Delete event?',
+      message:      'Delete this event permanently? Anyone you sent the link to will no longer find it.',
+      confirmLabel: 'Delete event',
+      tone:         'danger',
+    });
+    if (!ok) {
       setDeleting(false);
       return;
     }
@@ -134,6 +143,8 @@ export default function EditEventForm({ event }: { event: Event }) {
   };
 
   return (
+    <>
+    {dialog}
     <form onSubmit={save} className="space-y-5">
       <div>
         <label style={labelStyle}>Event title</label>
@@ -275,5 +286,6 @@ export default function EditEventForm({ event }: { event: Event }) {
         </button>
       </div>
     </form>
+    </>
   );
 }

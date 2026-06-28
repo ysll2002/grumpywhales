@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useDialog } from '@/components/Dialog';
 
 export type AdminRow = {
   email:      string;
@@ -13,6 +14,7 @@ export default function AdminsManager({ initial }: { initial: AdminRow[] }) {
   const [busy,  setBusy]  = useState(false);
   const [error, setError] = useState('');
   const [info,  setInfo]  = useState('');
+  const { confirm, dialog } = useDialog();
 
   async function invite(e: React.FormEvent) {
     e.preventDefault();
@@ -43,7 +45,13 @@ export default function AdminsManager({ initial }: { initial: AdminRow[] }) {
   }
 
   async function remove(target: string) {
-    if (!confirm(`Remove ${target} as a platform admin?`)) return;
+    const ok = await confirm({
+      title:        'Remove admin?',
+      message:      `Remove ${target} as a platform admin?`,
+      confirmLabel: 'Remove',
+      tone:         'danger',
+    });
+    if (!ok) return;
     setError(''); setInfo('');
     const res = await fetch('/api/admins', {
       method: 'DELETE',
@@ -61,6 +69,7 @@ export default function AdminsManager({ initial }: { initial: AdminRow[] }) {
 
   return (
     <div className="flex flex-col gap-5">
+      {dialog}
       <form onSubmit={invite} className="flex items-center gap-3 flex-wrap p-5 rounded-2xl"
         style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
         <input

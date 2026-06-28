@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useDialog } from '@/components/Dialog';
 
 type Props = {
   totalLabel: string;
@@ -10,9 +11,15 @@ type Props = {
 export default function PayAllButton({ totalLabel, count }: Props) {
   const [busy,  setBusy]  = useState(false);
   const [error, setError] = useState('');
+  const { confirm, dialog } = useDialog();
 
   async function payAll() {
-    if (!confirm(`Pay ${totalLabel} now to settle all ${count} outstanding sign-up${count === 1 ? '' : 's'} in one go?`)) return;
+    const ok = await confirm({
+      title:        'Pay all outstanding?',
+      message:      `Pay ${totalLabel} now to settle all ${count} outstanding sign-up${count === 1 ? '' : 's'} in one go.`,
+      confirmLabel: `Pay ${totalLabel}`,
+    });
+    if (!ok) return;
     setBusy(true); setError('');
     const res = await fetch('/api/checkout/pay-all', { method: 'POST' });
     if (!res.ok) {
@@ -28,6 +35,7 @@ export default function PayAllButton({ totalLabel, count }: Props) {
 
   return (
     <div className="flex flex-col items-end gap-1">
+      {dialog}
       <button
         type="button"
         onClick={payAll}
