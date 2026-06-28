@@ -93,13 +93,14 @@ export default function AttendeesTable({
   }
 
   // Fire a single PATCH per selected row in parallel. Optimistic — flip
-  // the local rows immediately, clear selection, then await the network.
+  // the local rows immediately and keep the selection so the admin can
+  // chain bulk actions (e.g. tick rows once, then set colour AND paid
+  // AND accepted in three clicks).
   async function bulkPatch(patch: { status?: SignupStatus; payment_status?: PaymentStatus; team_colour?: TeamColour | null }) {
     const ids = Array.from(selected);
     if (ids.length === 0) return;
     setBulkBusy(true); setError('');
     setRows(rs => rs.map(r => ids.includes(r.signup_id) ? { ...r, ...patch } : r));
-    setSelected(new Set());
     const results = await Promise.all(ids.map(id =>
       fetch(`/api/events/${eventId}/signups/${id}`, {
         method:  'PATCH',
