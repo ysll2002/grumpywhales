@@ -53,8 +53,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
         userEmail={session.user.email ?? null}
       />
 
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-60 flex-shrink-0 sticky top-0 h-screen flex-col py-5" style={{ backgroundColor: 'var(--color-accent-dk)', color: '#FFFFFF' }}>
+      {/* Desktop sidebar — only above lg so iPad portrait (768–1023px)
+          still uses the slide-out drawer instead of getting a cramped
+          two-column layout. */}
+      <aside className="hidden lg:flex w-60 flex-shrink-0 sticky top-0 h-screen flex-col py-5" style={{ backgroundColor: 'var(--color-accent-dk)', color: '#FFFFFF' }}>
         <Link href="/dashboard" className="flex items-center gap-2 text-lg font-bold px-5 mb-8" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-yellow)', textDecoration: 'none' }}>
           <Image src="/logo.png" alt="GA Football Club" width={32} height={32} priority style={{ borderRadius: 5 }} />
           GA Football Club

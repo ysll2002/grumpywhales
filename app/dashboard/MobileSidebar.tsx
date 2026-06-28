@@ -21,7 +21,7 @@ export default function MobileSidebar({ nav, userName, userEmail }: Props) {
 
   return (
     <>
-      <header className="md:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3"
+      <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3"
         style={{ backgroundColor: 'var(--color-accent-dk)', color: '#FFFFFF' }}>
         <Link href="/dashboard" className="flex items-center gap-2 text-base font-bold"
           style={{ fontFamily: 'var(--font-display)', color: 'var(--color-yellow)', textDecoration: 'none' }}
@@ -50,7 +50,7 @@ export default function MobileSidebar({ nav, userName, userEmail }: Props) {
 
       {/* Backdrop */}
       {open && (
-        <div className="md:hidden fixed inset-0 z-40"
+        <div className="lg:hidden fixed inset-0 z-40"
           onClick={() => setOpen(false)}
           style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
         />
@@ -58,7 +58,7 @@ export default function MobileSidebar({ nav, userName, userEmail }: Props) {
 
       {/* Drawer */}
       <aside
-        className="md:hidden fixed top-0 left-0 z-50 h-screen w-72 max-w-[85vw] flex flex-col py-5 transition-transform duration-200"
+        className="lg:hidden fixed top-0 left-0 z-50 h-screen w-72 max-w-[85vw] flex flex-col py-5 transition-transform duration-200"
         style={{
           backgroundColor: 'var(--color-accent-dk)',
           color: '#FFFFFF',
