@@ -68,7 +68,47 @@ export default function AttendeesTable({
   const [lastPub,     setLastPub]     = useState<string | null>(publishedAt);
   const [cancelBusy,  setCancelBusy]  = useState(false);
   const [isCancelled, setIsCancelled] = useState(cancelled);
+  const [editMode,    setEditMode]    = useState(false);
+  const [selected,    setSelected]    = useState<Set<string>>(new Set());
+  const [bulkBusy,    setBulkBusy]    = useState(false);
   const { confirm, dialog: confirmDialog } = useDialog();
+
+  function toggleSelected(signupId: string) {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(signupId)) next.delete(signupId);
+      else                    next.add(signupId);
+      return next;
+    });
+  }
+  function toggleSelectAll() {
+    if (selected.size === rows.length) setSelected(new Set());
+    else                                setSelected(new Set(rows.map(r => r.signup_id)));
+  }
+  function exitEditMode() {
+    setEditMode(false);
+    setSelected(new Set());
+  }
+
+  // Fire a single PATCH per selected row in parallel. Optimistic — flip
+  // the local rows immediately, clear selection, then await the network.
+  async function bulkPatch(patch: { status?: SignupStatus; payment_status?: PaymentStatus }) {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    setBulkBusy(true); setError('');
+    setRows(rs => rs.map(r => ids.includes(r.signup_id) ? { ...r, ...patch } : r));
+    setSelected(new Set());
+    const results = await Promise.all(ids.map(id =>
+      fetch(`/api/events/${eventId}/signups/${id}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(patch),
+      }).then(r => r.ok)
+    ));
+    setBulkBusy(false);
+    const fails = results.filter(ok => !ok).length;
+    if (fails > 0) setError(`${fails} of ${ids.length} update${ids.length === 1 ? '' : 's'} failed — refresh to retry.`);
+  }
 
   // null = use the manual roster order (sort_order with signed_up fallback).
   type SortKey = 'signed_up' | 'past_3mo' | 'lifetime';
@@ -290,15 +330,27 @@ export default function AttendeesTable({
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2 flex-wrap justify-end">
-            <button
-              type="button"
-              onClick={publish}
-              disabled={publishing || rows.length === 0 || isCancelled}
-              className="px-5 py-2.5 rounded-full text-sm font-medium disabled:opacity-50"
-              style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', border: 'none', cursor: publishing ? 'wait' : 'pointer' }}
-            >
-              {publishing ? 'Sending…' : lastPub ? 'Re-send acceptances' : 'Accept attendees'}
-            </button>
+            {editMode ? (
+              <button
+                type="button"
+                onClick={exitEditMode}
+                disabled={bulkBusy}
+                className="px-5 py-2.5 rounded-full text-sm font-medium disabled:opacity-50"
+                style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-fg)', border: '1px solid var(--color-border)', cursor: 'pointer' }}
+              >
+                Done editing
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEditMode(true)}
+                disabled={rows.length === 0 || isCancelled}
+                className="px-5 py-2.5 rounded-full text-sm font-medium disabled:opacity-50"
+                style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', border: 'none', cursor: 'pointer' }}
+              >
+                Make up the team
+              </button>
+            )}
             {isRecurring && !isCancelled && (
               <button
                 type="button" onClick={cancelOccurrence} disabled={cancelBusy}
@@ -316,6 +368,30 @@ export default function AttendeesTable({
           )}
         </div>
       </div>
+
+      {editMode && (
+        <div className="p-4 rounded-2xl mb-4 flex items-center gap-3 flex-wrap"
+          style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
+          <span className="text-sm font-medium" style={{ color: 'var(--color-muted)' }}>
+            {selected.size === 0 ? 'Tick rows to apply a bulk action.' : `${selected.size} selected`}
+          </span>
+          <div className="flex items-center gap-2 flex-wrap ml-auto">
+            <BulkBtn label="Mark accepted" onClick={() => bulkPatch({ status: 'accepted' })} disabled={selected.size === 0 || bulkBusy} primary />
+            <BulkBtn label="Mark pending"  onClick={() => bulkPatch({ status: 'pending'  })} disabled={selected.size === 0 || bulkBusy} />
+            <BulkBtn label="Mark paid"     onClick={() => bulkPatch({ payment_status: 'paid'   })} disabled={selected.size === 0 || bulkBusy} primary />
+            <BulkBtn label="Mark unpaid"   onClick={() => bulkPatch({ payment_status: 'unpaid' })} disabled={selected.size === 0 || bulkBusy} />
+            <button
+              type="button"
+              onClick={publish}
+              disabled={publishing || rows.length === 0}
+              className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
+              style={{ backgroundColor: 'var(--color-accent-dk)', color: '#FFFFFF', border: 'none', cursor: publishing ? 'wait' : 'pointer' }}
+            >
+              {publishing ? 'Sending…' : lastPub ? 'Re-send acceptances' : 'Send acceptances'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {publishMsg && (
         <p className="text-sm py-2 px-3 rounded-lg mb-4"
@@ -343,7 +419,17 @@ export default function AttendeesTable({
           <thead>
             <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
               <Th>#</Th>
-              <Th title="Tick to include on the final list. Publish at any time — you can keep editing afterwards.">Final list</Th>
+              {editMode && (
+                <Th title="Select rows to apply a bulk action">
+                  <input
+                    type="checkbox"
+                    checked={selected.size === rows.length && rows.length > 0}
+                    onChange={toggleSelectAll}
+                    aria-label="Select all"
+                    style={{ width: 16, height: 16, accentColor: 'var(--color-accent)', cursor: 'pointer' }}
+                  />
+                </Th>
+              )}
               <Th>Attendee</Th>
               <SortableTh active={sortKey === 'signed_up'} onClick={() => toggleSort('signed_up')}>
                 Signed up{sortArrow('signed_up')}
@@ -364,16 +450,17 @@ export default function AttendeesTable({
             {sortedRows.map((r, idx) => (
               <tr key={r.signup_id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                 <Td muted>{idx + 1}</Td>
-                <Td>
-                  <label className="inline-flex items-center cursor-pointer" title={r.status === 'accepted' ? 'On the final list' : 'Not on the final list'}>
+                {editMode && (
+                  <Td>
                     <input
                       type="checkbox"
-                      checked={r.status === 'accepted'}
-                      onChange={e => changeStatus(r.signup_id, e.target.checked ? 'accepted' : 'pending')}
-                      style={{ width: 18, height: 18, accentColor: 'var(--color-accent)', cursor: 'pointer' }}
+                      checked={selected.has(r.signup_id)}
+                      onChange={() => toggleSelected(r.signup_id)}
+                      aria-label={`Select ${r.name ?? r.email ?? ''}`}
+                      style={{ width: 16, height: 16, accentColor: 'var(--color-accent)', cursor: 'pointer' }}
                     />
-                  </label>
-                </Td>
+                  </Td>
+                )}
                 <Td>
                   <div className="font-medium">{r.name ?? '—'}</div>
                   <div className="text-xs" style={{ color: 'var(--color-muted)' }}>{r.email}</div>
@@ -431,12 +518,36 @@ export default function AttendeesTable({
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={10} className="p-8 text-center text-sm" style={{ color: 'var(--color-muted)' }}>No-one has signed up yet.</td></tr>
+              <tr><td colSpan={editMode ? 10 : 9} className="p-8 text-center text-sm" style={{ color: 'var(--color-muted)' }}>No-one has signed up yet.</td></tr>
             )}
           </tbody>
         </table>
       </div>
     </>
+  );
+}
+
+function BulkBtn({ label, onClick, disabled, primary }: {
+  label:     string;
+  onClick:   () => void;
+  disabled?: boolean;
+  primary?:  boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-40"
+      style={{
+        backgroundColor: primary ? 'var(--color-accent)' : 'var(--color-bg)',
+        color:           primary ? '#FFFFFF'            : 'var(--color-fg)',
+        border:          primary ? 'none'               : '1px solid var(--color-border)',
+        cursor:          disabled ? 'not-allowed' : 'pointer',
+      }}
+    >
+      {label}
+    </button>
   );
 }
 
