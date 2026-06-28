@@ -68,6 +68,9 @@ export function formatEventDateTime(iso: string): string {
   return d.toLocaleString('en-GB', {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
+    // Pin to Europe/London so server-side renders (which default to UTC)
+    // match the host's BST/GMT clock instead of being an hour off in summer.
+    timeZone: 'Europe/London',
   });
 }
 

@@ -88,8 +88,13 @@ export default async function ManageEventsPage({ searchParams }: { searchParams:
                       <Badge tone={badge}>{badge.label}</Badge>
                     </div>
                     <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-                      {formatEventDateTime(ev.starts_at)}{ev.location ? ` · ${ev.location}` : ''}
+                      {formatEventDateTime(ev.starts_at)}
                     </p>
+                    {ev.location && (
+                      <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
+                        {ev.location}
+                      </p>
+                    )}
                   </Link>
                   <div className="flex items-center gap-4 flex-shrink-0">
                     <p className="text-xl font-semibold">{ev.fee_amount > 0 ? formatMoney(ev.fee_amount, ev.fee_currency) : 'Free'}</p>
