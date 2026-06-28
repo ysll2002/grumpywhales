@@ -68,6 +68,44 @@ export default function AttendeesTable({
   const [cancelBusy,  setCancelBusy]  = useState(false);
   const [isCancelled, setIsCancelled] = useState(cancelled);
 
+  // null = use the manual roster order (sort_order with signed_up fallback).
+  type SortKey = 'signed_up' | 'past_3mo' | 'lifetime';
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'signed_up' ? 'asc' : 'desc');
+    }
+  }
+  function clearSort() {
+    setSortKey(null);
+    setSortDir('asc');
+  }
+  function rate(attended: number, total: number): number {
+    return total === 0 ? -1 : attended / total;
+  }
+  const sortedRows = useMemo(() => {
+    if (sortKey == null) return rows;
+    const sign = sortDir === 'asc' ? 1 : -1;
+    const arr = rows.slice();
+    arr.sort((a, b) => {
+      if (sortKey === 'signed_up')
+        return sign * (new Date(a.signed_up_at).getTime() - new Date(b.signed_up_at).getTime());
+      if (sortKey === 'past_3mo')
+        return sign * (rate(a.past_3mo_attended, a.past_3mo_total) - rate(b.past_3mo_attended, b.past_3mo_total));
+      return   sign * (rate(a.lifetime_attended, a.lifetime_total) - rate(b.lifetime_attended, b.lifetime_total));
+    });
+    return arr;
+  }, [rows, sortKey, sortDir]);
+  function sortArrow(key: SortKey): string {
+    if (sortKey !== key) return '';
+    return sortDir === 'asc' ? ' ↑' : ' ↓';
+  }
+
   async function cancelOccurrence() {
     const paidCount = rows.filter(r => r.payment_status === 'paid').length;
     const refundNote = paidCount
@@ -268,6 +306,17 @@ export default function AttendeesTable({
         <p className="text-sm py-2 px-3 rounded-lg mb-4" style={{ backgroundColor: '#FEE2E2', color: 'var(--color-red)' }}>{error}</p>
       )}
 
+      {sortKey != null && (
+        <p className="text-xs mb-2" style={{ color: 'var(--color-muted)' }}>
+          Sorted by <strong>{sortKey === 'signed_up' ? 'Signed up' : sortKey === 'past_3mo' ? '3 mo' : 'Lifetime'}</strong> ({sortDir === 'asc' ? 'ascending' : 'descending'}).{' '}
+          <button type="button" onClick={clearSort}
+            className="underline"
+            style={{ color: 'var(--color-accent-dk)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
+            Clear sort
+          </button>
+        </p>
+      )}
       <div className="rounded-2xl overflow-x-auto" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
         <table className="w-full text-sm">
           <thead>
@@ -275,18 +324,24 @@ export default function AttendeesTable({
               <Th>#</Th>
               <Th title="Tick to include on the final list. Publish at any time — you can keep editing afterwards.">Final list</Th>
               <Th>Attendee</Th>
-              <Th>Signed up</Th>
+              <SortableTh active={sortKey === 'signed_up'} onClick={() => toggleSort('signed_up')}>
+                Signed up{sortArrow('signed_up')}
+              </SortableTh>
               <Th>Status</Th>
               <Th>Pay</Th>
-              <Th title="Past 3 months attendance for this event">3 mo</Th>
-              <Th title="Lifetime attendance for this event">Lifetime</Th>
+              <SortableTh active={sortKey === 'past_3mo'} onClick={() => toggleSort('past_3mo')} title="Past 3 months attendance for this event">
+                3 mo{sortArrow('past_3mo')}
+              </SortableTh>
+              <SortableTh active={sortKey === 'lifetime'} onClick={() => toggleSort('lifetime')} title="Lifetime attendance for this event">
+                Lifetime{sortArrow('lifetime')}
+              </SortableTh>
               {eventStarted && <Th title="Did they attend on this event's date?">Attended</Th>}
               <Th>Order</Th>
               <Th>{' '}</Th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, idx) => (
+            {sortedRows.map((r, idx) => (
               <tr key={r.signup_id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                 <Td muted>{idx + 1}</Td>
                 <Td>
@@ -352,9 +407,13 @@ export default function AttendeesTable({
                 )}
                 <Td>
                   <div className="flex gap-1">
-                    <button type="button" onClick={() => swap(idx, -1)} disabled={idx === 0 || busy}
+                    <button type="button" onClick={() => swap(idx, -1)}
+                      disabled={idx === 0 || busy || sortKey != null}
+                      title={sortKey != null ? 'Disabled while a column sort is active — clear the sort to reorder manually.' : 'Move up'}
                       className="px-2 py-0.5 text-xs rounded disabled:opacity-30" style={{ background: 'transparent', border: '1px solid var(--color-border)', cursor: 'pointer' }}>↑</button>
-                    <button type="button" onClick={() => swap(idx,  1)} disabled={idx === rows.length - 1 || busy}
+                    <button type="button" onClick={() => swap(idx,  1)}
+                      disabled={idx === rows.length - 1 || busy || sortKey != null}
+                      title={sortKey != null ? 'Disabled while a column sort is active — clear the sort to reorder manually.' : 'Move down'}
                       className="px-2 py-0.5 text-xs rounded disabled:opacity-30" style={{ background: 'transparent', border: '1px solid var(--color-border)', cursor: 'pointer' }}>↓</button>
                   </div>
                 </Td>
@@ -393,6 +452,22 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
 
 function Th({ children, title }: { children: React.ReactNode; title?: string }) {
   return <th title={title} className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider" style={{ color: 'var(--color-muted)' }}>{children}</th>;
+}
+
+function SortableTh({ children, title, active, onClick }: {
+  children: React.ReactNode;
+  title?:   string;
+  active:   boolean;
+  onClick:  () => void;
+}) {
+  return (
+    <th title={title} className="text-left px-4 py-3 font-medium text-xs uppercase tracking-wider"
+      style={{ color: active ? 'var(--color-fg)' : 'var(--color-muted)', cursor: 'pointer', userSelect: 'none' }}
+      onClick={onClick}
+    >
+      {children}
+    </th>
+  );
 }
 
 function Td({ children, muted }: { children: React.ReactNode; muted?: boolean }) {
