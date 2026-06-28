@@ -423,6 +423,7 @@ export default function AttendeesTable({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap basis-full justify-end">
+            <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--color-muted)' }}>Operation</span>
             <BulkBtn label="Mark accepted" onClick={() => bulkPatch({ status: 'accepted' })} disabled={selected.size === 0 || bulkBusy} />
             <BulkBtn label="Mark pending"  onClick={() => bulkPatch({ status: 'pending'  })} disabled={selected.size === 0 || bulkBusy} />
             <BulkBtn label="Mark paid"     onClick={() => bulkPatch({ payment_status: 'paid'   })} disabled={selected.size === 0 || bulkBusy} />
