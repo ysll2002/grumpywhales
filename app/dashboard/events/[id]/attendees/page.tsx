@@ -116,7 +116,7 @@ export default async function AttendeesPage({
   const eventStarted = new Date(selected).getTime() + ONE_DAY_MS <= Date.now();
 
   return (
-    <div className="p-8 max-w-6xl">
+    <div className="p-4 sm:p-8 max-w-6xl">
       <Link href="/dashboard/events" className="text-sm mb-4 inline-block" style={{ color: 'var(--color-muted)', textDecoration: 'none' }}>
         ← My events
       </Link>

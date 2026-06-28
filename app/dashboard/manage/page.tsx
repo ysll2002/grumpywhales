@@ -32,7 +32,7 @@ export default async function ManageEventsPage({ searchParams }: { searchParams:
   const upcomingHosting = hostingEvents.filter(e => new Date(e.starts_at).getTime() >= now);
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-4 sm:p-8 max-w-5xl">
       {justCreated && (
         <div className="rounded-2xl px-5 py-4 mb-6"
           style={{ backgroundColor: '#D1FAE5', border: '1px solid #A7F3D0' }}>

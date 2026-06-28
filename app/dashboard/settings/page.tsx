@@ -14,7 +14,7 @@ export default async function SettingsPage() {
   }));
 
   return (
-    <div className="p-8 max-w-3xl">
+    <div className="p-4 sm:p-8 max-w-3xl">
       <h1 className="text-3xl font-semibold mb-1" style={{ fontFamily: 'var(--font-display)' }}>Settings</h1>
       <p className="text-sm mb-10" style={{ color: 'var(--color-muted)' }}>
         Manage who can host events on GrumpyWhales.

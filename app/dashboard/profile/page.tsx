@@ -68,7 +68,7 @@ export default async function ProfilePage() {
   });
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-8 max-w-4xl">
       <h1 className="text-3xl font-semibold mb-1" style={{ fontFamily: 'var(--font-display)' }}>Profile</h1>
       <p className="text-sm mb-10" style={{ color: 'var(--color-muted)' }}>
         Your account details and event activity.

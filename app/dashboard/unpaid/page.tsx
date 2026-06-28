@@ -26,17 +26,15 @@ export default async function UnpaidPage() {
     .select('id, occurrence_date, events(*)')
     .eq('profile_id', profileId)
     .eq('payment_status', 'unpaid')
-    .eq('status', 'accepted')
+    .neq('status', 'cancelled')
     .order('occurrence_date', { ascending: true });
 
-  // Drop rows where:
-  //   - the host cancelled that specific session (no payment owed), or
-  //   - the host hasn't published this session's final list yet (payment
-  //     isn't 'due' until the host says so).
+  // Drop rows where the host cancelled that specific session — no payment
+  // owed there. Otherwise show every unpaid signup so the user can settle
+  // any of them in one place.
   const rows = ((data ?? []) as unknown as UnpaidRow[])
     .filter(r => r.events)
     .filter(r => !(r.events!.cancelled_dates ?? []).includes(r.occurrence_date))
-    .filter(r => (r.events!.published_occurrence_dates ?? []).includes(r.occurrence_date))
     .map(r => ({
       row: r,
       iso: occurrenceIso(r.events!.starts_at, r.occurrence_date),
@@ -60,7 +58,7 @@ export default async function UnpaidPage() {
   ).join(' · ');
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-8 max-w-4xl">
       <h1 className="text-3xl font-semibold mb-1" style={{ fontFamily: 'var(--font-display)' }}>Unpaid</h1>
       <p className="text-sm mb-8" style={{ color: 'var(--color-muted)' }}>
         Sessions you&apos;re signed up to but haven&apos;t paid for yet. Pay any one at a time.

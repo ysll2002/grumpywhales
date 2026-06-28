@@ -5,6 +5,7 @@ import Image from 'next/image';
 import LogoutButton from '@/components/LogoutButton';
 import { isPlatformAdmin } from '@/lib/platform-admin';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
+import MobileSidebar from './MobileSidebar';
 
 type UnpaidProbe = {
   occurrence_date: string;
@@ -20,11 +21,10 @@ async function unpaidCountFor(profileId: string): Promise<number> {
     .select('occurrence_date, events(cancelled_dates, published_occurrence_dates)')
     .eq('profile_id', profileId)
     .eq('payment_status', 'unpaid')
-    .eq('status', 'accepted');
+    .neq('status', 'cancelled');
   return ((data ?? []) as unknown as UnpaidProbe[])
     .filter(r => r.events)
     .filter(r => !(r.events!.cancelled_dates ?? []).includes(r.occurrence_date))
-    .filter(r => (r.events!.published_occurrence_dates ?? []).includes(r.occurrence_date))
     .length;
 }
 
@@ -46,10 +46,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="flex min-h-screen">
-      <aside className="w-60 flex-shrink-0 sticky top-0 h-screen flex flex-col py-5" style={{ backgroundColor: 'var(--color-accent-dk)', color: '#FFFFFF' }}>
+      {/* Mobile (< md) only — slide-out drawer + sticky hamburger header. */}
+      <MobileSidebar
+        nav={nav}
+        userName={session.user.name ?? null}
+        userEmail={session.user.email ?? null}
+      />
+
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-60 flex-shrink-0 sticky top-0 h-screen flex-col py-5" style={{ backgroundColor: 'var(--color-accent-dk)', color: '#FFFFFF' }}>
         <Link href="/dashboard" className="flex items-center gap-2 text-lg font-bold px-5 mb-8" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-yellow)', textDecoration: 'none' }}>
-          <Image src="/logo.png" alt="GrumpyWhales" width={32} height={32} priority style={{ borderRadius: 5 }} />
-          GrumpyWhales
+          <Image src="/logo.png" alt="GA Football Club" width={32} height={32} priority style={{ borderRadius: 5 }} />
+          GA Football Club
         </Link>
         <nav className="flex flex-col gap-1 px-2 text-sm">
           {nav.map(item => (

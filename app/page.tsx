@@ -57,22 +57,22 @@ export default async function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_LD) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_LD) }} />
 
-      <nav className="max-w-6xl mx-auto px-6 py-5 flex justify-between items-center">
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)', textDecoration: 'none' }}>
-          <Image src="/logo.png" alt="GA Football Club" width={36} height={36} priority style={{ borderRadius: 6 }} />
-          GA Football Club
+      <nav className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex justify-between items-center gap-3">
+        <Link href="/" className="flex items-center gap-2 text-base sm:text-xl font-bold min-w-0" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)', textDecoration: 'none' }}>
+          <Image src="/logo.png" alt="GA Football Club" width={32} height={32} priority style={{ borderRadius: 6 }} />
+          <span className="truncate">GA Football Club</span>
         </Link>
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex items-center gap-3 sm:gap-4 text-sm flex-shrink-0">
           <Link href="#what-to-expect" className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)] hidden sm:inline">What to expect</Link>
           <Link href="#faq"            className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)] hidden sm:inline">FAQ</Link>
           {signedIn ? (
-            <Link href="/dashboard/events" className="px-5 py-2 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}>
-              Open dashboard →
+            <Link href="/dashboard/events" className="px-4 sm:px-5 py-2 rounded-full font-medium whitespace-nowrap" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', textDecoration: 'none' }}>
+              Dashboard →
             </Link>
           ) : (
             <>
-              <Link href="/login"    className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)]">Log in</Link>
-              <Link href="/register" className="px-5 py-2 rounded-full font-medium" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
+              <Link href="/login"    className="text-[color:var(--color-muted)] hover:text-[color:var(--color-fg)] hidden sm:inline">Log in</Link>
+              <Link href="/register" className="px-4 sm:px-5 py-2 rounded-full font-medium whitespace-nowrap" style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF' }}>
                 Join the club
               </Link>
             </>

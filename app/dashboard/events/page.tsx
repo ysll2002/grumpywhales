@@ -179,7 +179,7 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
     .sort((a, b) => new Date(b.iso).getTime() - new Date(a.iso).getTime());
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-4 sm:p-8 max-w-5xl">
       {paid === '1' && (
         <div className="rounded-2xl px-5 py-3 mb-6 text-sm"
           style={{ backgroundColor: '#D1FAE5', border: '1px solid #A7F3D0', color: 'var(--color-accent-dk)' }}>

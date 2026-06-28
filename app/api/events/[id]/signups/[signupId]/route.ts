@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { isEventAdmin } from '@/lib/event-admin';
-import type { SignupStatus } from '@/lib/signups';
+import type { SignupStatus, PaymentStatus } from '@/lib/signups';
 
-const VALID: SignupStatus[] = ['accepted', 'pending', 'waitlisted', 'declined', 'cancelled'];
+const VALID_STATUS:  SignupStatus[]  = ['accepted', 'pending', 'waitlisted', 'declined', 'cancelled'];
+const VALID_PAYMENT: PaymentStatus[] = ['free', 'unpaid', 'paid'];
 
-// PATCH /api/events/:id/signups/:signupId — admin changes a signup's status.
+// PATCH /api/events/:id/signups/:signupId — admin tweaks a signup row.
+// Body may set { status, payment_status }; both optional, validated per-field.
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string; signupId: string }> }) {
   const session = await auth();
   if (!session?.user?.profileId) return NextResponse.json({ error: 'unauthorised' }, { status: 401 });
@@ -15,14 +17,32 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
 
-  const body = await req.json().catch(() => null) as { status?: string } | null;
-  if (!body || typeof body.status !== 'string' || !VALID.includes(body.status as SignupStatus)) {
-    return NextResponse.json({ error: 'status_invalid' }, { status: 400 });
+  const body = await req.json().catch(() => null) as { status?: string; payment_status?: string } | null;
+  if (!body) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
+
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+
+  if ('status' in body) {
+    if (typeof body.status !== 'string' || !VALID_STATUS.includes(body.status as SignupStatus)) {
+      return NextResponse.json({ error: 'status_invalid' }, { status: 400 });
+    }
+    patch.status = body.status;
+  }
+  if ('payment_status' in body) {
+    if (typeof body.payment_status !== 'string' || !VALID_PAYMENT.includes(body.payment_status as PaymentStatus)) {
+      return NextResponse.json({ error: 'payment_status_invalid' }, { status: 400 });
+    }
+    patch.payment_status = body.payment_status;
+    if (body.payment_status === 'paid')   patch.paid_at = new Date().toISOString();
+    if (body.payment_status === 'unpaid') patch.paid_at = null;
+  }
+  if (Object.keys(patch).length === 1) {
+    return NextResponse.json({ error: 'nothing_to_update' }, { status: 400 });
   }
 
   const { data, error } = await supabase
     .from('event_signups')
-    .update({ status: body.status, updated_at: new Date().toISOString() })
+    .update(patch)
     .eq('id', signupId)
     .eq('event_id', eventId)
     .select('*')
