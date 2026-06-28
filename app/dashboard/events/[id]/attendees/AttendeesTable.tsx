@@ -237,7 +237,7 @@ export default function AttendeesTable({
               className="px-5 py-2.5 rounded-full text-sm font-medium disabled:opacity-50"
               style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', border: 'none', cursor: publishing ? 'wait' : 'pointer' }}
             >
-              {publishing ? 'Publishing…' : lastPub ? 'Re-publish & email' : 'Publish & email everyone'}
+              {publishing ? 'Sending…' : lastPub ? 'Re-send acceptances' : 'Accept attendees'}
             </button>
             {isRecurring && !isCancelled && (
               <button
