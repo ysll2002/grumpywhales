@@ -351,6 +351,15 @@ export default function AttendeesTable({
                 Make up the team
               </button>
             )}
+            <button
+              type="button"
+              onClick={publish}
+              disabled={publishing || rows.length === 0 || isCancelled}
+              className="px-5 py-2.5 rounded-full text-sm font-medium disabled:opacity-50"
+              style={{ backgroundColor: 'var(--color-accent-dk)', color: '#FFFFFF', border: 'none', cursor: publishing ? 'wait' : 'pointer' }}
+            >
+              {publishing ? 'Sending…' : lastPub ? 'Re-notify all players' : 'Notify all players'}
+            </button>
             {isRecurring && !isCancelled && (
               <button
                 type="button" onClick={cancelOccurrence} disabled={cancelBusy}
@@ -380,15 +389,6 @@ export default function AttendeesTable({
             <BulkBtn label="Mark pending"  onClick={() => bulkPatch({ status: 'pending'  })} disabled={selected.size === 0 || bulkBusy} />
             <BulkBtn label="Mark paid"     onClick={() => bulkPatch({ payment_status: 'paid'   })} disabled={selected.size === 0 || bulkBusy} />
             <BulkBtn label="Mark unpaid"   onClick={() => bulkPatch({ payment_status: 'unpaid' })} disabled={selected.size === 0 || bulkBusy} />
-            <button
-              type="button"
-              onClick={publish}
-              disabled={publishing || rows.length === 0}
-              className="px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50"
-              style={{ backgroundColor: 'var(--color-accent-dk)', color: '#FFFFFF', border: 'none', cursor: publishing ? 'wait' : 'pointer' }}
-            >
-              {publishing ? 'Sending…' : lastPub ? 'Re-send acceptances' : 'Send acceptances'}
-            </button>
           </div>
         </div>
       )}
