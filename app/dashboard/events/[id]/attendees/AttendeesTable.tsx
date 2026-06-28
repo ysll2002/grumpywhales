@@ -31,12 +31,13 @@ type Props = {
   initial:          AttendeeRow[];
 };
 
+// Only two visible statuses now — pending (default) and accepted (on the
+// final list). 'cancelled' still exists as an internal soft-delete state
+// (set by self-cancel or the Remove button) but the row is filtered out of
+// the table query so it never needs to render here.
 const STATUS_OPTIONS: { value: SignupStatus; label: string }[] = [
-  { value: 'accepted',   label: 'Accepted'   },
-  { value: 'pending',    label: 'Pending'    },
-  { value: 'waitlisted', label: 'Waitlist'   },
-  { value: 'declined',   label: 'Declined'   },
-  { value: 'cancelled',  label: 'Cancelled'  },
+  { value: 'pending',  label: 'Pending'  },
+  { value: 'accepted', label: 'Accepted' },
 ];
 
 const STATUS_TONE: Record<SignupStatus, { bg: string; fg: string }> = {
@@ -314,10 +315,17 @@ export default function AttendeesTable({
                   </select>
                 </Td>
                 <Td>
-                  <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold"
-                    style={{ backgroundColor: PAY_TONE[r.payment_status].bg, color: PAY_TONE[r.payment_status].fg }}>
-                    {r.payment_status}
-                  </span>
+                  {r.status === 'pending' ? (
+                    <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold"
+                      style={{ backgroundColor: '#E5E7EB', color: '#6B7280' }}>
+                      N/A
+                    </span>
+                  ) : (
+                    <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold"
+                      style={{ backgroundColor: PAY_TONE[r.payment_status].bg, color: PAY_TONE[r.payment_status].fg }}>
+                      {r.payment_status}
+                    </span>
+                  )}
                 </Td>
                 <Td><Rate attended={r.past_3mo_attended} total={r.past_3mo_total} /></Td>
                 <Td><Rate attended={r.lifetime_attended} total={r.lifetime_total} /></Td>

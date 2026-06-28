@@ -26,7 +26,7 @@ export default async function UnpaidPage() {
     .select('id, occurrence_date, events(*)')
     .eq('profile_id', profileId)
     .eq('payment_status', 'unpaid')
-    .neq('status', 'cancelled')
+    .eq('status', 'accepted')
     .order('occurrence_date', { ascending: true });
 
   // Drop rows where:

@@ -20,7 +20,7 @@ async function unpaidCountFor(profileId: string): Promise<number> {
     .select('occurrence_date, events(cancelled_dates, published_occurrence_dates)')
     .eq('profile_id', profileId)
     .eq('payment_status', 'unpaid')
-    .neq('status', 'cancelled');
+    .eq('status', 'accepted');
   return ((data ?? []) as unknown as UnpaidProbe[])
     .filter(r => r.events)
     .filter(r => !(r.events!.cancelled_dates ?? []).includes(r.occurrence_date))

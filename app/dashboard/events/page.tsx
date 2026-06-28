@@ -284,9 +284,15 @@ function AttendingCard({
           <Badge tone={{ bg: '#FEE2E2', fg: 'var(--color-red)' }}>Cancelled by host</Badge>
         ) : signup ? (() => {
           const sessionPublished = (event.published_occurrence_dates ?? []).includes(occurrenceDate);
+          // Payment is only relevant once the attendee is on the final list.
+          // Pending = no payment due → no badge, no Pay button.
+          const isAccepted = signup.status === 'accepted';
           const showPayBadge =
-            Number(event.fee_amount) > 0 && (signup.payment_status === 'paid' || sessionPublished);
+            isAccepted &&
+            Number(event.fee_amount) > 0 &&
+            (signup.payment_status === 'paid' || sessionPublished);
           const showPayButton =
+            isAccepted &&
             !past &&
             Number(event.fee_amount) > 0 &&
             signup.payment_status === 'unpaid' &&
