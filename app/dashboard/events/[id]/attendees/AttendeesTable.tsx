@@ -272,6 +272,7 @@ export default function AttendeesTable({
           <thead>
             <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
               <Th>#</Th>
+              <Th title="Tick to include on the final list. Publish at any time — you can keep editing afterwards.">Final list</Th>
               <Th>Attendee</Th>
               <Th>Signed up</Th>
               <Th>Status</Th>
@@ -287,6 +288,16 @@ export default function AttendeesTable({
             {rows.map((r, idx) => (
               <tr key={r.signup_id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                 <Td muted>{idx + 1}</Td>
+                <Td>
+                  <label className="inline-flex items-center cursor-pointer" title={r.status === 'accepted' ? 'On the final list' : 'Not on the final list'}>
+                    <input
+                      type="checkbox"
+                      checked={r.status === 'accepted'}
+                      onChange={e => changeStatus(r.signup_id, e.target.checked ? 'accepted' : 'pending')}
+                      style={{ width: 18, height: 18, accentColor: 'var(--color-accent)', cursor: 'pointer' }}
+                    />
+                  </label>
+                </Td>
                 <Td>
                   <div className="font-medium">{r.name ?? '—'}</div>
                   <div className="text-xs" style={{ color: 'var(--color-muted)' }}>{r.email}</div>
@@ -354,7 +365,7 @@ export default function AttendeesTable({
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={eventStarted ? 10 : 9} className="p-8 text-center text-sm" style={{ color: 'var(--color-muted)' }}>No-one has signed up yet.</td></tr>
+              <tr><td colSpan={eventStarted ? 11 : 10} className="p-8 text-center text-sm" style={{ color: 'var(--color-muted)' }}>No-one has signed up yet.</td></tr>
             )}
           </tbody>
         </table>
