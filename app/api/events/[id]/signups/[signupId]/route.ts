@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { isEventAdmin } from '@/lib/event-admin';
 import type { SignupStatus, PaymentStatus } from '@/lib/signups';
+import { TEAM_COLOUR_KEYS, type TeamColour } from '@/lib/signups';
 
 const VALID_STATUS:  SignupStatus[]  = ['accepted', 'pending', 'waitlisted', 'declined', 'cancelled'];
 const VALID_PAYMENT: PaymentStatus[] = ['free', 'unpaid', 'paid'];
@@ -17,7 +18,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
 
-  const body = await req.json().catch(() => null) as { status?: string; payment_status?: string } | null;
+  const body = await req.json().catch(() => null) as { status?: string; payment_status?: string; team_colour?: string | null } | null;
   if (!body) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
 
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -35,6 +36,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     patch.payment_status = body.payment_status;
     if (body.payment_status === 'paid')   patch.paid_at = new Date().toISOString();
     if (body.payment_status === 'unpaid') patch.paid_at = null;
+  }
+  if ('team_colour' in body) {
+    if (body.team_colour == null) {
+      patch.team_colour = null;
+    } else if (typeof body.team_colour !== 'string' || !TEAM_COLOUR_KEYS.includes(body.team_colour as TeamColour)) {
+      return NextResponse.json({ error: 'team_colour_invalid' }, { status: 400 });
+    } else {
+      patch.team_colour = body.team_colour;
+    }
   }
   if (Object.keys(patch).length === 1) {
     return NextResponse.json({ error: 'nothing_to_update' }, { status: 400 });

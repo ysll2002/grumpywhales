@@ -33,3 +33,18 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   unpaid: 'Payment due',
   paid:   'Paid',
 };
+
+// Team colours the host can assign per attendee per session. Keys are the
+// stored values; the label/swatch is for rendering.
+export type TeamColour = 'belmont_silver' | 'black' | 'green' | 'white' | 'red' | 'pink';
+
+export const TEAM_COLOURS: { value: TeamColour; label: string; swatch: string; fg: string }[] = [
+  { value: 'belmont_silver', label: 'Belmont silver', swatch: '#C0C0C0', fg: '#1F2937' },
+  { value: 'black',          label: 'Black',          swatch: '#111111', fg: '#FFFFFF' },
+  { value: 'green',          label: 'Green',          swatch: '#00A859', fg: '#FFFFFF' },
+  { value: 'white',          label: 'White',          swatch: '#FFFFFF', fg: '#1F2937' },
+  { value: 'red',            label: 'Red',            swatch: '#DC2626', fg: '#FFFFFF' },
+  { value: 'pink',           label: 'Pink',           swatch: '#F472B6', fg: '#7C2D5F' },
+];
+
+export const TEAM_COLOUR_KEYS: TeamColour[] = TEAM_COLOURS.map(c => c.value);

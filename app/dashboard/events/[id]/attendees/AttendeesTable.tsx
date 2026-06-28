@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { SignupStatus, PaymentStatus } from '@/lib/signups';
+import type { SignupStatus, PaymentStatus, TeamColour } from '@/lib/signups';
+import { TEAM_COLOURS } from '@/lib/signups';
 import { useDialog } from '@/components/Dialog';
 
 export type AttendeeRow = {
@@ -12,6 +13,7 @@ export type AttendeeRow = {
   email:             string | null;
   status:            SignupStatus;
   payment_status:    PaymentStatus;
+  team_colour:       TeamColour | null;
   signed_up_at:      string;
   sort_order:        number | null;
   attended_today:    boolean | null;   // null = not yet recorded for this event's date
@@ -92,7 +94,7 @@ export default function AttendeesTable({
 
   // Fire a single PATCH per selected row in parallel. Optimistic — flip
   // the local rows immediately, clear selection, then await the network.
-  async function bulkPatch(patch: { status?: SignupStatus; payment_status?: PaymentStatus }) {
+  async function bulkPatch(patch: { status?: SignupStatus; payment_status?: PaymentStatus; team_colour?: TeamColour | null }) {
     const ids = Array.from(selected);
     if (ids.length === 0) return;
     setBulkBusy(true); setError('');
@@ -390,6 +392,41 @@ export default function AttendeesTable({
             <BulkBtn label="Mark paid"     onClick={() => bulkPatch({ payment_status: 'paid'   })} disabled={selected.size === 0 || bulkBusy} />
             <BulkBtn label="Mark unpaid"   onClick={() => bulkPatch({ payment_status: 'unpaid' })} disabled={selected.size === 0 || bulkBusy} />
           </div>
+
+          <div className="flex items-center gap-2 flex-wrap basis-full">
+            <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--color-muted)' }}>Team colour</span>
+            {TEAM_COLOURS.map(c => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => bulkPatch({ team_colour: c.value })}
+                disabled={selected.size === 0 || bulkBusy}
+                className="px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-40"
+                style={{
+                  backgroundColor: c.swatch,
+                  color:           c.fg,
+                  border:          c.value === 'white' ? '1px solid var(--color-border)' : 'none',
+                  cursor:          (selected.size === 0 || bulkBusy) ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {c.label}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => bulkPatch({ team_colour: null })}
+              disabled={selected.size === 0 || bulkBusy}
+              className="px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-40"
+              style={{
+                backgroundColor: 'var(--color-bg)',
+                color:           'var(--color-fg)',
+                border:          '1px solid var(--color-border)',
+                cursor:          (selected.size === 0 || bulkBusy) ? 'not-allowed' : 'pointer',
+              }}
+            >
+              N/A
+            </button>
+          </div>
         </div>
       )}
 
@@ -436,6 +473,7 @@ export default function AttendeesTable({
               </SortableTh>
               <Th>Status</Th>
               <Th>Pay</Th>
+              <Th>Team colour</Th>
               <SortableTh active={sortKey === 'past_3mo'} onClick={() => toggleSort('past_3mo')} title="Past 3 months attendance for this event">
                 3 mo{sortArrow('past_3mo')}
               </SortableTh>
@@ -498,6 +536,9 @@ export default function AttendeesTable({
                     </span>
                   )}
                 </Td>
+                <Td>
+                  <TeamColourBadge value={r.team_colour} />
+                </Td>
                 <Td><Rate attended={r.past_3mo_attended} total={r.past_3mo_total} /></Td>
                 <Td><Rate attended={r.lifetime_attended} total={r.lifetime_total} /></Td>
                 <Td>
@@ -527,12 +568,31 @@ export default function AttendeesTable({
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={editMode ? 10 : 9} className="p-8 text-center text-sm" style={{ color: 'var(--color-muted)' }}>No-one has signed up yet.</td></tr>
+              <tr><td colSpan={editMode ? 11 : 10} className="p-8 text-center text-sm" style={{ color: 'var(--color-muted)' }}>No-one has signed up yet.</td></tr>
             )}
           </tbody>
         </table>
       </div>
     </>
+  );
+}
+
+function TeamColourBadge({ value }: { value: TeamColour | null }) {
+  if (!value) {
+    return (
+      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold"
+        style={{ backgroundColor: '#E5E7EB', color: '#6B7280' }}>
+        N/A
+      </span>
+    );
+  }
+  const c = TEAM_COLOURS.find(t => t.value === value);
+  if (!c) return <span style={{ color: 'var(--color-muted)' }}>—</span>;
+  return (
+    <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold inline-flex items-center gap-1.5"
+      style={{ backgroundColor: c.swatch, color: c.fg, border: c.value === 'white' ? '1px solid var(--color-border)' : 'none' }}>
+      {c.label}
+    </span>
   );
 }
 
