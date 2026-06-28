@@ -31,6 +31,38 @@ export default async function ManageEventsPage({ searchParams }: { searchParams:
   const justCreated   = created ? hostingEvents.find(e => e.id === created) : null;
   const upcomingHosting = hostingEvents.filter(e => new Date(e.starts_at).getTime() >= now);
 
+  // Cross-event signup totals so the admin can see platform health at a glance.
+  // Limit the queries to events this admin actually manages (for a platform
+  // admin that's every event; for a per-event admin it's their own list).
+  const managedEventIds = hostingEvents.map(e => e.id);
+  let signedUpCount = 0, acceptedCount = 0, paidCount = 0, unpaidCount = 0;
+  if (managedEventIds.length > 0) {
+    const [signedUpRes, acceptedRes, paidRes, unpaidRes] = await Promise.all([
+      supabase.from('event_signups')
+        .select('id', { head: true, count: 'exact' })
+        .in('event_id', managedEventIds)
+        .neq('status', 'cancelled'),
+      supabase.from('event_signups')
+        .select('id', { head: true, count: 'exact' })
+        .in('event_id', managedEventIds)
+        .eq('status', 'accepted'),
+      supabase.from('event_signups')
+        .select('id', { head: true, count: 'exact' })
+        .in('event_id', managedEventIds)
+        .eq('status', 'accepted')
+        .eq('payment_status', 'paid'),
+      supabase.from('event_signups')
+        .select('id', { head: true, count: 'exact' })
+        .in('event_id', managedEventIds)
+        .eq('status', 'accepted')
+        .eq('payment_status', 'unpaid'),
+    ]);
+    signedUpCount = signedUpRes.count ?? 0;
+    acceptedCount = acceptedRes.count ?? 0;
+    paidCount     = paidRes.count     ?? 0;
+    unpaidCount   = unpaidRes.count   ?? 0;
+  }
+
   return (
     <div className="p-4 sm:p-8 max-w-5xl">
       {justCreated && (
@@ -65,6 +97,17 @@ export default async function ManageEventsPage({ searchParams }: { searchParams:
           + New event
         </Link>
       </div>
+
+      <section className="mb-10">
+        <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>At a glance</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <Stat label="Events organised" value={hostingEvents.length} />
+          <Stat label="Total sign-ups"   value={signedUpCount} />
+          <Stat label="Accepted"         value={acceptedCount} />
+          <Stat label="Paid"             value={paidCount} tone="good" />
+          <Stat label="Payment due"      value={unpaidCount} tone={unpaidCount > 0 ? 'bad' : undefined} />
+        </div>
+      </section>
 
       <section className="mb-12">
         <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>Hosting</h2>
@@ -125,5 +168,15 @@ function Badge({ tone, children }: { tone: { bg: string; fg: string }; children:
       style={{ backgroundColor: tone.bg, color: tone.fg }}>
       {children}
     </span>
+  );
+}
+
+function Stat({ label, value, tone }: { label: string; value: number | string; tone?: 'good' | 'bad' }) {
+  const fg = tone === 'good' ? 'var(--color-accent-dk)' : tone === 'bad' ? 'var(--color-red)' : undefined;
+  return (
+    <div className="p-5 rounded-2xl" style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
+      <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--color-muted)' }}>{label}</p>
+      <p className="text-2xl font-semibold mt-1" style={{ fontFamily: 'var(--font-display)', color: fg }}>{value}</p>
+    </div>
   );
 }
