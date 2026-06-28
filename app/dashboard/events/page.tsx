@@ -6,6 +6,7 @@ import AttendRequestButton from './AttendRequestButton';
 import CancelSignupButton from './CancelSignupButton';
 import PayButton from '../unpaid/PayButton';
 import { stripe } from '@/lib/stripe';
+import { revalidatePath } from 'next/cache';
 
 // Resolve a paid=1 redirect from Stripe: load the session, confirm it's paid,
 // and flip our signup row to paid synchronously so the user doesn't have to
@@ -18,7 +19,7 @@ async function confirmPaymentFromSession(sessionId: string, viewerProfileId: str
     const signupId = sess.client_reference_id;
     if (!signupId) return;
     const paymentIntentId = typeof sess.payment_intent === 'string' ? sess.payment_intent : null;
-    await supabase
+    const { data } = await supabase
       .from('event_signups')
       .update({
         payment_status:           'paid',
@@ -28,7 +29,14 @@ async function confirmPaymentFromSession(sessionId: string, viewerProfileId: str
       })
       .eq('id', signupId)
       .eq('profile_id', viewerProfileId)
-      .eq('payment_status', 'unpaid');
+      .eq('payment_status', 'unpaid')
+      .select('id')
+      .maybeSingle();
+    // Bust the dashboard layout cache so the sidebar Unpaid badge
+    // re-counts on this same render — the page itself reads fresh data,
+    // but the layout segment would otherwise stay on its previous value
+    // until you fully reloaded.
+    if (data) revalidatePath('/dashboard', 'layout');
   } catch (err) {
     console.error('[dashboard/events] stripe verify failed', err);
   }
