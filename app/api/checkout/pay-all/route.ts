@@ -29,7 +29,7 @@ export async function POST(_req: Request) {
     .select('id, occurrence_date, events(id, title, fee_amount, fee_currency, cancelled_dates)')
     .eq('profile_id', profileId)
     .eq('payment_status', 'unpaid')
-    .neq('status', 'cancelled');
+    .eq('status', 'accepted');
 
   const rows = ((data ?? []) as unknown as UnpaidRow[])
     .filter(r => r.events)

@@ -37,6 +37,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'event_not_open' }, { status: 409 });
   }
   if (!signup) return NextResponse.json({ error: 'not_signed_up' }, { status: 409 });
+  if (signup.status !== 'accepted') {
+    return NextResponse.json({ error: 'not_accepted_yet' }, { status: 409 });
+  }
   if (signup.payment_status === 'paid') {
     return NextResponse.json({ error: 'already_paid' }, { status: 409 });
   }
