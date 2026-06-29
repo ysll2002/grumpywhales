@@ -367,7 +367,7 @@ function AttendingCard({
           );
         })() : opensAtIso ? (
           <Badge tone={{ bg: '#FFF4B8', fg: '#7C5800' }}>
-            Sign-ups open {new Date(opensAtIso).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+            Sign-ups open {new Date(opensAtIso).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' })}
           </Badge>
         ) : past ? null : (
           <AttendRequestButton

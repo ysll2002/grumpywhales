@@ -169,10 +169,10 @@ export function occurrenceCancelledEmail(opts: OccurrenceCancelledOpts) {
   const greet = attendeeName ? `Hi ${attendeeName.split(' ')[0]}` : 'Hi there';
   const dateLabel = new Date(occurrenceIso).toLocaleString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+    hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London',
   });
 
-  const subject = `Cancelled: ${event.title} on ${new Date(occurrenceIso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
+  const subject = `Cancelled: ${event.title} on ${new Date(occurrenceIso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Europe/London' })}`;
   const refundLine = paid ? "Your payment will be refunded — the host will arrange this with you directly." : '';
 
   const text = [
