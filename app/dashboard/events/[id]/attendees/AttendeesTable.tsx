@@ -114,7 +114,7 @@ export default function AttendeesTable({
   }
 
   // null = use the manual roster order (sort_order with signed_up fallback).
-  type SortKey = 'signed_up' | 'past_3mo' | 'lifetime';
+  type SortKey = 'signed_up' | 'past_3mo' | 'lifetime' | 'team_colour';
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
@@ -123,7 +123,7 @@ export default function AttendeesTable({
       setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortKey(key);
-      setSortDir(key === 'signed_up' ? 'asc' : 'desc');
+      setSortDir(key === 'signed_up' || key === 'team_colour' ? 'asc' : 'desc');
     }
   }
   function clearSort() {
@@ -133,15 +133,28 @@ export default function AttendeesTable({
   function rate(attended: number, total: number): number {
     return total === 0 ? -1 : attended / total;
   }
+  // Index team colours by their canonical order in TEAM_COLOURS (Belmont
+  // silver → Pink). Unassigned (null) always sinks to the bottom of the
+  // visible list regardless of direction.
+  const TEAM_COLOUR_ORDER: Record<string, number> = Object.fromEntries(
+    TEAM_COLOURS.map((c, i) => [c.value, i]),
+  );
+  function teamColourRank(v: TeamColour | null, asc: boolean): number {
+    if (v == null) return asc ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+    return TEAM_COLOUR_ORDER[v] ?? (asc ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
+  }
   const sortedRows = useMemo(() => {
     if (sortKey == null) return rows;
     const sign = sortDir === 'asc' ? 1 : -1;
+    const asc = sortDir === 'asc';
     const arr = rows.slice();
     arr.sort((a, b) => {
       if (sortKey === 'signed_up')
         return sign * (new Date(a.signed_up_at).getTime() - new Date(b.signed_up_at).getTime());
       if (sortKey === 'past_3mo')
         return sign * (rate(a.past_3mo_attended, a.past_3mo_total) - rate(b.past_3mo_attended, b.past_3mo_total));
+      if (sortKey === 'team_colour')
+        return sign * (teamColourRank(a.team_colour, asc) - teamColourRank(b.team_colour, asc));
       return   sign * (rate(a.lifetime_attended, a.lifetime_total) - rate(b.lifetime_attended, b.lifetime_total));
     });
     return arr;
@@ -444,7 +457,7 @@ export default function AttendeesTable({
 
       {sortKey != null && (
         <p className="text-xs mb-2" style={{ color: 'var(--color-muted)' }}>
-          Sorted by <strong>{sortKey === 'signed_up' ? 'Signed up' : sortKey === 'past_3mo' ? '3 mo' : 'Lifetime'}</strong> ({sortDir === 'asc' ? 'ascending' : 'descending'}).{' '}
+          Sorted by <strong>{sortKey === 'signed_up' ? 'Signed up' : sortKey === 'past_3mo' ? '3 mo' : sortKey === 'team_colour' ? 'Team colour' : 'Lifetime'}</strong> ({sortDir === 'asc' ? 'ascending' : 'descending'}).{' '}
           <button type="button" onClick={clearSort}
             className="underline"
             style={{ color: 'var(--color-accent-dk)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
@@ -475,7 +488,9 @@ export default function AttendeesTable({
               </SortableTh>
               <Th>Status</Th>
               <Th>Pay</Th>
-              <Th>Team colour</Th>
+              <SortableTh active={sortKey === 'team_colour'} onClick={() => toggleSort('team_colour')} title="Sort by team colour (unassigned last)">
+                Team colour{sortArrow('team_colour')}
+              </SortableTh>
               <SortableTh active={sortKey === 'past_3mo'} onClick={() => toggleSort('past_3mo')} title="Past 3 months attendance for this event">
                 3 mo{sortArrow('past_3mo')}
               </SortableTh>
