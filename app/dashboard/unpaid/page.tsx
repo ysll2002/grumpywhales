@@ -22,12 +22,15 @@ export default async function UnpaidPage() {
   const session = await auth();
   const profileId = session!.user.profileId;
 
+  // Only accepted-and-unpaid surfaces as "due". Pending rows carry
+  // payment_status='unpaid' in the DB but render as N/A in the UI —
+  // they shouldn't show here or contribute to the outstanding total.
   const { data } = await supabase
     .from('event_signups')
     .select('id, occurrence_date, events(*)')
     .eq('profile_id', profileId)
     .eq('payment_status', 'unpaid')
-    .neq('status', 'cancelled')
+    .eq('status', 'accepted')
     .order('occurrence_date', { ascending: true });
 
   // Drop rows where the host cancelled that specific session — no payment
