@@ -72,7 +72,6 @@ export function attendeeListPublishEmail(opts: PublishOpts) {
     <tr><td style="padding:6px 12px;color:#6B6B6B;">When</td><td style="padding:6px 12px;">${escapeHtml(startsLabel)}</td></tr>
     ${event.location ? `<tr><td style="padding:6px 12px;color:#6B6B6B;">Where</td><td style="padding:6px 12px;">${escapeHtml(event.location)}</td></tr>` : ''}
     <tr><td style="padding:6px 12px;color:#6B6B6B;">Fee</td><td style="padding:6px 12px;">${escapeHtml(feeLabel)}</td></tr>
-    ${event.payment_reference ? `<tr><td style="padding:6px 12px;color:#6B6B6B;">Reference</td><td style="padding:6px 12px;font-family:ui-monospace,Menlo,monospace;">${escapeHtml(event.payment_reference)}</td></tr>` : ''}
   `;
 
   // Roster table — same for everyone, so any player can see the team sheet.
@@ -124,7 +123,6 @@ export function attendeeListPublishEmail(opts: PublishOpts) {
     status !== 'declined' ? `When:      ${startsLabel}` : '',
     status !== 'declined' && event.location ? `Where:     ${event.location}` : '',
     status !== 'declined' ? `Fee:       ${feeLabel}` : '',
-    status !== 'declined' && event.payment_reference ? `Reference: ${event.payment_reference}` : '',
     rosterText,
     ``,
     `Event page: ${eventUrl}`,
