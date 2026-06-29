@@ -5,6 +5,7 @@ import { formatEventDateTime, formatMoney, computeNextOccurrences, signupOpenInf
 import AttendRequestButton from './AttendRequestButton';
 import CancelSignupButton from './CancelSignupButton';
 import PayButton from '../unpaid/PayButton';
+import SignupListLink from './SignupListLink';
 import { stripe } from '@/lib/stripe';
 import { revalidatePath } from 'next/cache';
 
@@ -172,30 +173,37 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
 
   const allAttending = [...myRows, ...discoveryRows];
 
-  // Fetch signup totals (matches the admin Attendees 'Signed up' column —
-  // any non-cancelled status) for every (event_id, occurrence_date) we
-  // show. One pass, bucket locally.
+  // Fetch signup totals + names (matches the admin Attendees 'Signed up'
+  // column — any non-cancelled status) for every (event_id, occurrence_date)
+  // we show. One pass, bucket locally. Names are kept in sign-up order so
+  // the modal reads as a roster.
   const involvedEventIds = Array.from(new Set(allAttending.map(r => r.event.id)));
-  const signupCountByKey = new Map<string, number>();
+  const signupNamesByKey = new Map<string, string[]>();
   if (involvedEventIds.length > 0) {
     const { data: signupRows } = await supabase
       .from('event_signups')
-      .select('event_id, occurrence_date')
+      .select('event_id, occurrence_date, signed_up_at, profiles(name)')
       .in('event_id', involvedEventIds)
-      .neq('status', 'cancelled');
-    for (const r of (signupRows ?? []) as { event_id: string; occurrence_date: string }[]) {
+      .neq('status', 'cancelled')
+      .order('signed_up_at', { ascending: true });
+    type Row = { event_id: string; occurrence_date: string; profiles: { name: string | null } | null };
+    for (const r of (signupRows ?? []) as unknown as Row[]) {
       const k = `${r.event_id}:${r.occurrence_date}`;
-      signupCountByKey.set(k, (signupCountByKey.get(k) ?? 0) + 1);
+      const list = signupNamesByKey.get(k) ?? [];
+      list.push(r.profiles?.name ?? 'Anonymous');
+      signupNamesByKey.set(k, list);
     }
   }
 
-  // Materialise extra metadata each card needs (counts + sign-up window).
+  // Materialise extra metadata each card needs (names + sign-up window).
   const enriched = allAttending.map(r => {
     const openInfo = signupOpenInfo(r.event, r.iso);
+    const names = signupNamesByKey.get(r.key) ?? [];
     return {
       ...r,
-      signedUp:   signupCountByKey.get(r.key) ?? 0,
-      opensAtIso: openInfo.open ? null : openInfo.opensAt.toISOString(),
+      signedUp:    names.length,
+      signedUpNames: names,
+      opensAtIso:  openInfo.open ? null : openInfo.opensAt.toISOString(),
     };
   });
 
@@ -277,20 +285,18 @@ function Badge({ tone, children }: { tone: { bg: string; fg: string }; children:
 }
 
 function AttendingCard({
-  event, iso, cancelled, signup, signedUp, opensAtIso, past = false,
+  event, iso, cancelled, signup, signedUp, signedUpNames, opensAtIso, past = false,
 }: {
-  event:      Event;
-  iso:        string;
-  cancelled:  boolean;
-  signup:     { id: string; status: SignupStatus; payment_status: PaymentStatus } | null;
-  signedUp:   number;
-  opensAtIso: string | null;
-  past?:      boolean;
+  event:         Event;
+  iso:           string;
+  cancelled:     boolean;
+  signup:        { id: string; status: SignupStatus; payment_status: PaymentStatus } | null;
+  signedUp:      number;
+  signedUpNames: string[];
+  opensAtIso:    string | null;
+  past?:         boolean;
 }) {
   const dateLine = formatEventDateTime(iso).toUpperCase();
-  const capacityLine = event.capacity != null
-    ? `${signedUp} / ${event.capacity} signed up`
-    : `${signedUp} signed up`;
   const occurrenceDate = iso.slice(0, 10);
 
   return (
@@ -309,9 +315,11 @@ function AttendingCard({
         <p className="text-base sm:text-lg font-bold leading-tight" style={{ fontFamily: 'var(--font-display)', textDecoration: cancelled ? 'line-through' : undefined }}>
           {dateLine}
         </p>
-        <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>
-          {cancelled ? 'Sign-ups closed' : capacityLine}
-        </p>
+        {cancelled ? (
+          <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>Sign-ups closed</p>
+        ) : (
+          <SignupListLink names={signedUpNames} count={signedUp} capacity={event.capacity} />
+        )}
       </div>
 
       <div className="flex flex-col items-end gap-1 flex-shrink-0">
