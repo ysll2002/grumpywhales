@@ -45,8 +45,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
   ];
 
   return (
-    <div className="flex min-h-screen">
-      {/* Mobile (< md) only — slide-out drawer + sticky hamburger header. */}
+    // Block layout on phones/tablets so the mobile hamburger header sits
+    // full-width above <main>; switch to a row at lg so the desktop
+    // sidebar lives alongside it. Without lg: the sticky header becomes a
+    // flex child and ends up next to <main>, squeezing both into half
+    // columns.
+    <div className="min-h-screen lg:flex">
+      {/* Mobile (< lg) only — slide-out drawer + sticky hamburger header. */}
       <MobileSidebar
         nav={nav}
         userName={session.user.name ?? null}
@@ -95,7 +100,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <LogoutButton />
         </div>
       </aside>
-      <main className="flex-1 overflow-auto">{children}</main>
+      <main className="flex-1 lg:overflow-auto">{children}</main>
     </div>
   );
 }
