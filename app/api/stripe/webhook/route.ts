@@ -26,14 +26,36 @@ export async function POST(req: NextRequest) {
     case 'checkout.session.completed': {
       const sessionObj = event.data.object as Stripe.Checkout.Session;
       if (sessionObj.payment_status !== 'paid') break;
-      const signupId = sessionObj.client_reference_id;
-      if (!signupId) break;
+
+      const cref = sessionObj.client_reference_id ?? '';
+      const paymentIntentId = typeof sessionObj.payment_intent === 'string' ? sessionObj.payment_intent : null;
+      const nowIso = new Date().toISOString();
+
+      // Bulk pay-all: client_reference_id = 'bulk:<profileId>' and the
+      // signup ids ride in metadata.signup_ids as a CSV. Flip every one
+      // of those rows paid, scoped to the buyer's profile so a forged
+      // ref can't touch someone else's signups.
+      if (cref.startsWith('bulk:')) {
+        const profileId = cref.slice('bulk:'.length);
+        const ids = (sessionObj.metadata?.signup_ids ?? '').split(',').map(s => s.trim()).filter(Boolean);
+        if (!profileId || ids.length === 0) break;
+        await supabase.from('event_signups').update({
+          payment_status:           'paid',
+          paid_at:                  nowIso,
+          stripe_payment_intent_id: paymentIntentId,
+          updated_at:               nowIso,
+        }).in('id', ids).eq('profile_id', profileId).eq('payment_status', 'unpaid');
+        break;
+      }
+
+      // Single signup: client_reference_id is just the signup id.
+      if (!cref) break;
       await supabase.from('event_signups').update({
         payment_status:           'paid',
-        paid_at:                  new Date().toISOString(),
-        stripe_payment_intent_id: typeof sessionObj.payment_intent === 'string' ? sessionObj.payment_intent : null,
-        updated_at:               new Date().toISOString(),
-      }).eq('id', signupId);
+        paid_at:                  nowIso,
+        stripe_payment_intent_id: paymentIntentId,
+        updated_at:               nowIso,
+      }).eq('id', cref);
       break;
     }
     case 'charge.refunded': {
