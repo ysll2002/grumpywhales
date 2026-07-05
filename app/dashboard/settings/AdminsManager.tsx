@@ -10,13 +10,14 @@ export type UserRow = {
   is_admin:   boolean;
 };
 
-export default function AdminsManager({ initial }: { initial: UserRow[] }) {
+export default function AdminsManager({ initial, currentEmail }: { initial: UserRow[]; currentEmail: string | null }) {
   const [rows,  setRows]  = useState<UserRow[]>(initial);
   const [email, setEmail] = useState('');
   const [busy,  setBusy]  = useState(false);
   const [error, setError] = useState('');
   const [info,  setInfo]  = useState('');
   const { confirm, dialog } = useDialog();
+  const meLower = currentEmail?.toLowerCase() ?? null;
 
   async function invite(e: React.FormEvent) {
     e.preventDefault();
@@ -75,6 +76,29 @@ export default function AdminsManager({ initial }: { initial: UserRow[] }) {
     }
     setRows(rs => rs.map(r => r.email.toLowerCase() === target.toLowerCase() ? { ...r, is_admin: false } : r));
     setInfo(`${target} is no longer an admin.`);
+  }
+
+  async function removeUser(target: string) {
+    const ok = await confirm({
+      title:        'Remove user?',
+      message:      `Permanently remove ${target}? Their signups and attendance records will be deleted. This can't be undone.`,
+      confirmLabel: 'Remove',
+      tone:         'danger',
+    });
+    if (!ok) return;
+    setError(''); setInfo('');
+    const res = await fetch('/api/users', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: target }),
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setError(j.detail ?? j.error ?? 'remove_failed');
+      return;
+    }
+    setRows(rs => rs.filter(r => r.email.toLowerCase() !== target.toLowerCase()));
+    setInfo(`${target} removed.`);
   }
 
   const adminCount = rows.filter(r => r.is_admin).length;
@@ -137,17 +161,34 @@ export default function AdminsManager({ initial }: { initial: UserRow[] }) {
                     : '—'}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  {r.is_admin && (
-                    <button
-                      type="button" onClick={() => removeAdmin(r.email)}
-                      disabled={adminCount <= 1}
-                      className="text-xs disabled:opacity-30"
-                      style={{ color: 'var(--color-red)', background: 'none', border: 'none', cursor: adminCount <= 1 ? 'not-allowed' : 'pointer' }}
-                      title={adminCount <= 1 ? 'At least one admin must remain' : undefined}
-                    >
-                      Revoke admin
-                    </button>
-                  )}
+                  {(() => {
+                    const isSelf = meLower != null && r.email.toLowerCase() === meLower;
+                    if (isSelf) {
+                      return <span className="text-xs" style={{ color: 'var(--color-muted)' }}>You</span>;
+                    }
+                    return (
+                      <div className="flex items-center gap-3 justify-end">
+                        {r.is_admin && (
+                          <button
+                            type="button" onClick={() => removeAdmin(r.email)}
+                            disabled={adminCount <= 1}
+                            className="text-xs disabled:opacity-30"
+                            style={{ color: 'var(--color-muted)', background: 'none', border: 'none', cursor: adminCount <= 1 ? 'not-allowed' : 'pointer' }}
+                            title={adminCount <= 1 ? 'At least one admin must remain' : undefined}
+                          >
+                            Revoke admin
+                          </button>
+                        )}
+                        <button
+                          type="button" onClick={() => removeUser(r.email)}
+                          className="text-xs"
+                          style={{ color: 'var(--color-red)', background: 'none', border: 'none', cursor: 'pointer' }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </td>
               </tr>
             ))}

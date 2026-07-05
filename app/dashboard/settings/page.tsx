@@ -27,7 +27,7 @@ export default async function SettingsPage() {
         <p className="text-sm mb-5" style={{ color: 'var(--color-muted)' }}>
           Admins can create events and invite other admins. New admins gain access the next time they sign in with this email.
         </p>
-        <AdminsManager initial={rows} />
+        <AdminsManager initial={rows} currentEmail={session?.user?.email ?? null} />
       </section>
     </div>
   );
