@@ -23,7 +23,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       .select('id, title, fee_amount, fee_currency, payment_reference, status, cancelled_dates, published_occurrence_dates')
       .eq('id', eventId).maybeSingle(),
     supabase.from('event_signups')
-      .select('id, status, payment_status, stripe_session_id')
+      .select('id, status, payment_status, stripe_session_id, fee_amount, fee_currency')
       .eq('event_id', eventId).eq('profile_id', profileId).eq('occurrence_date', body.occurrence_date).maybeSingle(),
   ]);
 
@@ -43,7 +43,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (signup.payment_status === 'paid') {
     return NextResponse.json({ error: 'already_paid' }, { status: 409 });
   }
-  if (Number(event.fee_amount) <= 0) {
+  // Prefer the signup's frozen fee (past-occurrence / paid signups have one)
+  // so editing the event price doesn't retroactively rewrite historical debt.
+  const chargeAmount   = Number(signup.fee_amount ?? event.fee_amount);
+  const chargeCurrency = signup.fee_currency ?? event.fee_currency;
+  if (chargeAmount <= 0) {
     return NextResponse.json({ error: 'event_is_free' }, { status: 409 });
   }
 
@@ -61,8 +65,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       mode: 'payment',
       line_items: [{
         price_data: {
-          currency:     event.fee_currency.toLowerCase(),
-          unit_amount:  Math.round(Number(event.fee_amount) * 100),
+          currency:     chargeCurrency.toLowerCase(),
+          unit_amount:  Math.round(chargeAmount * 100),
           product_data: { name: event.title },
         },
         quantity: 1,

@@ -9,9 +9,18 @@ type DueRow = {
   id:              string;
   occurrence_date: string;
   signed_up_at:    string;
+  fee_amount:      number | null;
+  fee_currency:    string | null;
   profiles:        { name: string | null; email: string } | null;
   events:          (Event & { admin_id: string }) | null;
 };
+
+function feeOf(r: DueRow): { amount: number; currency: string } | null {
+  const amt = r.fee_amount ?? r.events?.fee_amount;
+  const ccy = r.fee_currency ?? r.events?.fee_currency;
+  if (amt == null || !ccy) return null;
+  return { amount: Number(amt), currency: ccy };
+}
 
 function occurrenceIso(eventStartsAt: string, occDate: string): string {
   const start = new Date(eventStartsAt);
@@ -37,7 +46,7 @@ export default async function PaymentDuePage() {
   if (managedEventIds.length > 0) {
     const { data } = await supabase
       .from('event_signups')
-      .select('id, occurrence_date, signed_up_at, profiles(name, email), events(*)')
+      .select('id, occurrence_date, signed_up_at, fee_amount, fee_currency, profiles(name, email), events(*)')
       .in('event_id', managedEventIds)
       .eq('status', 'accepted')
       .eq('payment_status', 'unpaid')
@@ -47,14 +56,12 @@ export default async function PaymentDuePage() {
       .filter(r => !(r.events!.cancelled_dates ?? []).includes(r.occurrence_date));
   }
 
-  // Totals by currency.
+  // Totals by currency — prefer the frozen per-signup fee.
   const totalsByCurrency = new Map<string, number>();
   for (const r of rows) {
-    if (!r.events) continue;
-    totalsByCurrency.set(
-      r.events.fee_currency,
-      (totalsByCurrency.get(r.events.fee_currency) ?? 0) + Number(r.events.fee_amount),
-    );
+    const fee = feeOf(r);
+    if (!fee) continue;
+    totalsByCurrency.set(fee.currency, (totalsByCurrency.get(fee.currency) ?? 0) + fee.amount);
   }
   const totalLabel = Array.from(totalsByCurrency.entries()).map(([ccy, amt]) =>
     new Intl.NumberFormat('en-GB', { style: 'currency', currency: ccy, maximumFractionDigits: 2 }).format(amt)
@@ -113,7 +120,7 @@ export default async function PaymentDuePage() {
                       </Td>
                       <Td>{r.events!.title}</Td>
                       <Td muted>{formatEventDateTime(iso)}</Td>
-                      <Td>{formatMoney(r.events!.fee_amount, r.events!.fee_currency)}</Td>
+                      <Td>{(() => { const f = feeOf(r); return f ? formatMoney(f.amount, f.currency) : '—'; })()}</Td>
                       <Td>
                         <Link
                           href={`/dashboard/events/${r.events!.id}/attendees?occurrence=${r.occurrence_date}`}

@@ -7,8 +7,20 @@ import PayAllButton from './PayAllButton';
 type UnpaidRow = {
   id:              string;
   occurrence_date: string;
+  fee_amount:      number | null;
+  fee_currency:    string | null;
   events:          Event | null;
 };
+
+// The signup carries its own frozen fee once the event's price has been edited
+// past its cutoff (paid or past occurrence). Falls back to the event's live
+// price for the future-unpaid case.
+function feeOf(r: UnpaidRow): { amount: number; currency: string } | null {
+  const amt = r.fee_amount ?? r.events?.fee_amount;
+  const ccy = r.fee_currency ?? r.events?.fee_currency;
+  if (amt == null || !ccy) return null;
+  return { amount: Number(amt), currency: ccy };
+}
 
 function occurrenceIso(eventStartsAt: string, occDate: string): string {
   const start = new Date(eventStartsAt);
@@ -27,7 +39,7 @@ export default async function UnpaidPage() {
   // they shouldn't show here or contribute to the outstanding total.
   const { data } = await supabase
     .from('event_signups')
-    .select('id, occurrence_date, events(*)')
+    .select('id, occurrence_date, fee_amount, fee_currency, events(*)')
     .eq('profile_id', profileId)
     .eq('payment_status', 'unpaid')
     .eq('status', 'accepted')
@@ -51,11 +63,9 @@ export default async function UnpaidPage() {
   // Total owed (group by currency)
   const totalsByCurrency = new Map<string, number>();
   for (const { row } of rows) {
-    if (!row.events) continue;
-    totalsByCurrency.set(
-      row.events.fee_currency,
-      (totalsByCurrency.get(row.events.fee_currency) ?? 0) + Number(row.events.fee_amount),
-    );
+    const fee = feeOf(row);
+    if (!fee) continue;
+    totalsByCurrency.set(fee.currency, (totalsByCurrency.get(fee.currency) ?? 0) + fee.amount);
   }
   const totalLabel = Array.from(totalsByCurrency.entries()).map(([ccy, amt]) =>
     new Intl.NumberFormat('en-GB', { style: 'currency', currency: ccy, maximumFractionDigits: 2 }).format(amt)
@@ -125,14 +135,19 @@ function Section({ title, items, muted }:
               </p>
             </div>
             <div className="flex items-center gap-4 flex-shrink-0">
-              <p className="text-xl font-semibold">
-                {formatMoney(row.events.fee_amount, row.events.fee_currency)}
-              </p>
-              <PayButton
-                eventId={row.events.id}
-                occurrenceDate={row.occurrence_date}
-                feeLabel={formatMoney(row.events.fee_amount, row.events.fee_currency)}
-              />
+              {(() => {
+                const fee = feeOf(row);
+                return fee ? (
+                  <>
+                    <p className="text-xl font-semibold">{formatMoney(fee.amount, fee.currency)}</p>
+                    <PayButton
+                      eventId={row.events!.id}
+                      occurrenceDate={row.occurrence_date}
+                      feeLabel={formatMoney(fee.amount, fee.currency)}
+                    />
+                  </>
+                ) : null;
+              })()}
             </div>
           </div>
         ))}

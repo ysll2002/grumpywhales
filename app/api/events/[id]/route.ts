@@ -137,6 +137,28 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
   }
 
+  // If the fee is changing, freeze the OLD price onto any signup that shouldn't
+  // move with the change: already-paid rows (historical fact) and rows for past
+  // occurrences. Future unpaid signups keep fee_amount NULL and follow the new
+  // price. This runs before the event UPDATE so `existing.fee_*` still holds the
+  // pre-change values.
+  const feeChanging =
+    ('fee_amount'   in patch && Number(patch.fee_amount)   !== Number(existing.fee_amount)) ||
+    ('fee_currency' in patch && patch.fee_currency         !== existing.fee_currency);
+  if (feeChanging) {
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const { error: freezeErr } = await supabase
+      .from('event_signups')
+      .update({ fee_amount: existing.fee_amount, fee_currency: existing.fee_currency })
+      .eq('event_id', id)
+      .is('fee_amount', null)
+      .or(`payment_status.eq.paid,occurrence_date.lt.${todayIso}`);
+    if (freezeErr) {
+      console.error('[events PATCH] fee freeze failed', freezeErr);
+      return NextResponse.json({ error: 'freeze_failed', detail: freezeErr.message }, { status: 500 });
+    }
+  }
+
   const { data, error } = await supabase
     .from('events')
     .update(patch)

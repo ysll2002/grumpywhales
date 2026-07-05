@@ -6,6 +6,8 @@ import { stripe } from '@/lib/stripe';
 type UnpaidRow = {
   id:              string;
   occurrence_date: string;
+  fee_amount:      number | null;
+  fee_currency:    string | null;
   events: {
     id:               string;
     title:            string;
@@ -26,40 +28,48 @@ export async function POST(_req: Request) {
 
   const { data } = await supabase
     .from('event_signups')
-    .select('id, occurrence_date, events(id, title, fee_amount, fee_currency, cancelled_dates)')
+    .select('id, occurrence_date, fee_amount, fee_currency, events(id, title, fee_amount, fee_currency, cancelled_dates)')
     .eq('profile_id', profileId)
     .eq('payment_status', 'unpaid')
     .eq('status', 'accepted');
 
-  const rows = ((data ?? []) as unknown as UnpaidRow[])
+  // Pick the frozen per-signup fee when set, otherwise fall back to the event's
+  // current live price. Same rule as every read path.
+  const rowsWithFee = ((data ?? []) as unknown as UnpaidRow[])
     .filter(r => r.events)
     .filter(r => !(r.events!.cancelled_dates ?? []).includes(r.occurrence_date))
-    .filter(r => Number(r.events!.fee_amount) > 0);
+    .map(r => ({
+      row:      r,
+      amount:   Number(r.fee_amount ?? r.events!.fee_amount),
+      currency: r.fee_currency ?? r.events!.fee_currency,
+    }))
+    .filter(x => x.amount > 0);
 
-  if (rows.length === 0) {
+  if (rowsWithFee.length === 0) {
     return NextResponse.json({ error: 'nothing_to_pay' }, { status: 409 });
   }
 
   // Mixed-currency outstanding totals can't be charged in a single Stripe
   // session — ask the user to pay per-row from the page instead.
-  const currencies = new Set(rows.map(r => r.events!.fee_currency.toUpperCase()));
+  const currencies = new Set(rowsWithFee.map(x => x.currency.toUpperCase()));
   if (currencies.size > 1) {
     return NextResponse.json({
       error:  'mixed_currencies',
       detail: 'You have outstanding payments in more than one currency. Pay each row individually.',
     }, { status: 409 });
   }
-  const currency = rows[0].events!.fee_currency;
+  const currency = rowsWithFee[0].currency;
+  const rows = rowsWithFee.map(x => x.row);
 
   // One line item per signup so the buyer sees a breakdown on the
   // Checkout page; total amount is implicit.
-  const lineItems = rows.map(r => ({
+  const lineItems = rowsWithFee.map(x => ({
     price_data: {
       currency:    currency.toLowerCase(),
-      unit_amount: Math.round(Number(r.events!.fee_amount) * 100),
+      unit_amount: Math.round(x.amount * 100),
       product_data: {
-        name:        r.events!.title,
-        description: `Session ${r.occurrence_date}`,
+        name:        x.row.events!.title,
+        description: `Session ${x.row.occurrence_date}`,
       },
     },
     quantity: 1,

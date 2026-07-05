@@ -14,6 +14,8 @@ type Profile = {
 };
 
 type PaidSignup = {
+  fee_amount:   number | null;
+  fee_currency: string | null;
   events: { fee_amount: number; fee_currency: string } | null;
 };
 
@@ -37,7 +39,7 @@ export default async function ProfilePage() {
     supabase.from('event_signups').select('id', { head: true, count: 'exact' }).eq('profile_id', profileId).neq('status', 'cancelled').gte('occurrence_date', todayUtc),
     supabase.from('event_attendance').select('id', { head: true, count: 'exact' }).eq('profile_id', profileId).eq('attended', true),
     supabase.from('event_attendance').select('id', { head: true, count: 'exact' }).eq('profile_id', profileId),
-    supabase.from('event_signups').select('events(fee_amount, fee_currency)').eq('profile_id', profileId).eq('payment_status', 'paid'),
+    supabase.from('event_signups').select('fee_amount, fee_currency, events(fee_amount, fee_currency)').eq('profile_id', profileId).eq('payment_status', 'paid'),
   ]);
 
   const profile = profileRes.data as Profile | null;
@@ -54,9 +56,12 @@ export default async function ProfilePage() {
   // but if they paid for events in different currencies, show them separately.
   const paidByCurrency = new Map<string, number>();
   for (const row of (paidRes.data ?? []) as unknown as PaidSignup[]) {
-    if (!row.events) continue;
-    const ccy = row.events.fee_currency;
-    paidByCurrency.set(ccy, (paidByCurrency.get(ccy) ?? 0) + Number(row.events.fee_amount));
+    // Prefer the frozen per-signup fee (what was actually paid) over the
+    // event's current live price.
+    const amt = row.fee_amount ?? row.events?.fee_amount;
+    const ccy = row.fee_currency ?? row.events?.fee_currency;
+    if (amt == null || !ccy) continue;
+    paidByCurrency.set(ccy, (paidByCurrency.get(ccy) ?? 0) + Number(amt));
   }
   const paidLines = Array.from(paidByCurrency.entries()).map(([ccy, amt]) =>
     new Intl.NumberFormat('en-GB', { style: 'currency', currency: ccy, maximumFractionDigits: 2 }).format(amt)
