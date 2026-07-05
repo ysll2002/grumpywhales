@@ -208,17 +208,16 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
   });
 
   // Upcoming = anything still ahead of now, ascending (soonest first).
-  // Past = sessions you actually attended — i.e. you held an 'accepted'
-  // signup AND the host published the final list for that date. Anything
-  // pending, waitlisted, or where the host never published is excluded so
-  // the past tab is a record of attendance, not of interest.
+  // Past = any 'accepted' signup whose session has now happened. We used to
+  // also require the host to have published the final list, but publishing is
+  // an email-notification action that's orthogonal to "did the user attend" —
+  // an accepted attendee is a record of attendance regardless.
   const upcomingEvents = enriched
     .filter(r => new Date(r.iso).getTime() >= now)
     .sort((a, b) => new Date(a.iso).getTime() - new Date(b.iso).getTime());
   const pastEvents = enriched
     .filter(r => new Date(r.iso).getTime() < now)
     .filter(r => r.signup?.status === 'accepted')
-    .filter(r => (r.event.published_occurrence_dates ?? []).includes(r.iso.slice(0, 10)))
     .sort((a, b) => new Date(b.iso).getTime() - new Date(a.iso).getTime());
 
   return (
@@ -257,13 +256,12 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
         )}
       </section>
 
-      {/* PAST EVENTS — sessions the user actually attended (accepted +
-          host published the final list for that date). */}
+      {/* PAST EVENTS — sessions the user was accepted for that have now happened. */}
       <section className="mb-8">
         <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'var(--font-display)' }}>Past events</h2>
         {pastEvents.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-            Sessions you were on the final list for will show up here once they&apos;ve happened.
+            Sessions you were accepted for will show up here once they&apos;ve happened.
           </p>
         ) : (
           <div className="grid gap-3">
