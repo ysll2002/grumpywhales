@@ -173,7 +173,7 @@ export default function AdminsManager({ initial, currentEmail }: { initial: User
                             type="button" onClick={() => removeAdmin(r.email)}
                             disabled={adminCount <= 1}
                             className="text-xs disabled:opacity-30"
-                            style={{ color: 'var(--color-muted)', background: 'none', border: 'none', cursor: adminCount <= 1 ? 'not-allowed' : 'pointer' }}
+                            style={{ color: '#2563EB', background: 'none', border: 'none', cursor: adminCount <= 1 ? 'not-allowed' : 'pointer' }}
                             title={adminCount <= 1 ? 'At least one admin must remain' : undefined}
                           >
                             Revoke admin
