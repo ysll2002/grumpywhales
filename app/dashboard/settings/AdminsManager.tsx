@@ -3,13 +3,15 @@
 import { useState } from 'react';
 import { useDialog } from '@/components/Dialog';
 
-export type AdminRow = {
+export type UserRow = {
   email:      string;
+  name:       string | null;
   created_at: string | null;
+  is_admin:   boolean;
 };
 
-export default function AdminsManager({ initial }: { initial: AdminRow[] }) {
-  const [rows,  setRows]  = useState<AdminRow[]>(initial);
+export default function AdminsManager({ initial }: { initial: UserRow[] }) {
+  const [rows,  setRows]  = useState<UserRow[]>(initial);
   const [email, setEmail] = useState('');
   const [busy,  setBusy]  = useState(false);
   const [error, setError] = useState('');
@@ -33,22 +35,30 @@ export default function AdminsManager({ initial }: { initial: AdminRow[] }) {
       return;
     }
     const j = await res.json().catch(() => ({})) as { email_sent?: boolean; email_error?: string | null };
-    if (!rows.some(r => r.email.toLowerCase() === trimmed)) {
-      setRows([...rows, { email: trimmed, created_at: new Date().toISOString() }]);
-    }
+    // If the promoted email is already in the user list, just flip its badge;
+    // otherwise prepend a stub row (invited email that hasn't signed up yet).
+    setRows(rs => {
+      const idx = rs.findIndex(r => r.email.toLowerCase() === trimmed);
+      if (idx >= 0) {
+        const copy = rs.slice();
+        copy[idx] = { ...copy[idx], is_admin: true };
+        return copy;
+      }
+      return [{ email: trimmed, name: null, created_at: new Date().toISOString(), is_admin: true }, ...rs];
+    });
     setEmail('');
     if (j.email_sent) {
-      setInfo(`${trimmed} added — welcome email sent.`);
+      setInfo(`${trimmed} promoted to admin — welcome email sent.`);
     } else {
-      setInfo(`${trimmed} added, but the welcome email failed to send${j.email_error ? `: ${j.email_error}` : ''}. Check RESEND_API_KEY / verified sender domain.`);
+      setInfo(`${trimmed} promoted to admin, but the welcome email failed to send${j.email_error ? `: ${j.email_error}` : ''}. Check RESEND_API_KEY / verified sender domain.`);
     }
   }
 
-  async function remove(target: string) {
+  async function removeAdmin(target: string) {
     const ok = await confirm({
-      title:        'Remove admin?',
-      message:      `Remove ${target} as a platform admin?`,
-      confirmLabel: 'Remove',
+      title:        'Revoke admin?',
+      message:      `Revoke admin access for ${target}? They will remain a registered user.`,
+      confirmLabel: 'Revoke',
       tone:         'danger',
     });
     if (!ok) return;
@@ -63,9 +73,11 @@ export default function AdminsManager({ initial }: { initial: AdminRow[] }) {
       setError(j.detail ?? j.error ?? 'remove_failed');
       return;
     }
-    setRows(rs => rs.filter(r => r.email.toLowerCase() !== target.toLowerCase()));
-    setInfo(`${target} removed.`);
+    setRows(rs => rs.map(r => r.email.toLowerCase() === target.toLowerCase() ? { ...r, is_admin: false } : r));
+    setInfo(`${target} is no longer an admin.`);
   }
+
+  const adminCount = rows.filter(r => r.is_admin).length;
 
   return (
     <div className="flex flex-col gap-5">
@@ -76,7 +88,7 @@ export default function AdminsManager({ initial }: { initial: AdminRow[] }) {
           type="email"
           value={email}
           onChange={e => { setEmail(e.target.value); setError(''); setInfo(''); }}
-          placeholder="invite@example.com"
+          placeholder="promote@example.com"
           className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm"
           style={{ backgroundColor: 'var(--color-bg)', border: '1px solid var(--color-border)' }}
           autoComplete="off"
@@ -87,7 +99,7 @@ export default function AdminsManager({ initial }: { initial: AdminRow[] }) {
           className="px-5 py-2 rounded-full text-sm font-medium disabled:opacity-50"
           style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', border: 'none', cursor: busy ? 'wait' : 'pointer' }}
         >
-          {busy ? 'Inviting…' : 'Invite admin'}
+          {busy ? 'Promoting…' : 'Promote to admin'}
         </button>
       </form>
       {info  && <p className="text-xs" style={{ color: 'var(--color-accent-dk)' }}>{info}</p>}
@@ -97,8 +109,8 @@ export default function AdminsManager({ initial }: { initial: AdminRow[] }) {
         <table className="w-full text-sm">
           <thead>
             <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-              <Th>Email</Th>
-              <Th>Added</Th>
+              <Th>User</Th>
+              <Th>Joined</Th>
               <Th>{' '}</Th>
             </tr>
           </thead>
@@ -106,11 +118,18 @@ export default function AdminsManager({ initial }: { initial: AdminRow[] }) {
             {rows.map(r => (
               <tr key={r.email} style={{ borderBottom: '1px solid var(--color-border)' }}>
                 <td className="px-4 py-3">
-                  <span className="font-medium">{r.email}</span>
-                  <span className="ml-2 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold"
-                    style={{ backgroundColor: '#D1FAE5', color: 'var(--color-accent-dk)' }}>
-                    Admin
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div>
+                      {r.name && <div className="font-medium">{r.name}</div>}
+                      <div className={r.name ? 'text-xs' : 'font-medium'} style={r.name ? { color: 'var(--color-muted)' } : undefined}>{r.email}</div>
+                    </div>
+                    {r.is_admin && (
+                      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold"
+                        style={{ backgroundColor: '#D1FAE5', color: 'var(--color-accent-dk)' }}>
+                        Admin
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3" style={{ color: 'var(--color-muted)' }}>
                   {r.created_at
@@ -118,15 +137,17 @@ export default function AdminsManager({ initial }: { initial: AdminRow[] }) {
                     : '—'}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button
-                    type="button" onClick={() => remove(r.email)}
-                    disabled={rows.length <= 1}
-                    className="text-xs disabled:opacity-30"
-                    style={{ color: 'var(--color-red)', background: 'none', border: 'none', cursor: rows.length <= 1 ? 'not-allowed' : 'pointer' }}
-                    title={rows.length <= 1 ? 'At least one admin must remain' : undefined}
-                  >
-                    Remove
-                  </button>
+                  {r.is_admin && (
+                    <button
+                      type="button" onClick={() => removeAdmin(r.email)}
+                      disabled={adminCount <= 1}
+                      className="text-xs disabled:opacity-30"
+                      style={{ color: 'var(--color-red)', background: 'none', border: 'none', cursor: adminCount <= 1 ? 'not-allowed' : 'pointer' }}
+                      title={adminCount <= 1 ? 'At least one admin must remain' : undefined}
+                    >
+                      Revoke admin
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
