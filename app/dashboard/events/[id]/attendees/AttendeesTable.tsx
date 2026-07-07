@@ -43,6 +43,12 @@ const STATUS_OPTIONS: { value: SignupStatus; label: string }[] = [
   { value: 'accepted', label: 'Accepted' },
 ];
 
+const PAYMENT_OPTIONS: { value: PaymentStatus; label: string }[] = [
+  { value: 'unpaid', label: 'Unpaid' },
+  { value: 'paid',   label: 'Paid'   },
+  { value: 'free',   label: 'Free'   },
+];
+
 const STATUS_TONE: Record<SignupStatus, { bg: string; fg: string }> = {
   accepted:   { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
   pending:    { bg: '#FFF4B8', fg: '#7C5800' },
@@ -257,6 +263,20 @@ export default function AttendeesTable({
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setError(j.detail ?? j.error ?? 'update_failed');
+    }
+  }
+
+  async function changePayment(signupId: string, payment_status: PaymentStatus) {
+    setRows(rs => rs.map(r => r.signup_id === signupId ? { ...r, payment_status } : r));
+    setError('');
+    const res = await fetch(`/api/events/${eventId}/signups/${signupId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payment_status }),
     });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
@@ -546,6 +566,15 @@ export default function AttendeesTable({
                       style={{ backgroundColor: '#E5E7EB', color: '#6B7280' }}>
                       N/A
                     </span>
+                  ) : editMode ? (
+                    <select
+                      value={r.payment_status}
+                      onChange={e => changePayment(r.signup_id, e.target.value as PaymentStatus)}
+                      className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold cursor-pointer"
+                      style={{ backgroundColor: PAY_TONE[r.payment_status].bg, color: PAY_TONE[r.payment_status].fg, border: 'none' }}
+                    >
+                      {PAYMENT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
                   ) : (
                     <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold"
                       style={{ backgroundColor: PAY_TONE[r.payment_status].bg, color: PAY_TONE[r.payment_status].fg }}>
