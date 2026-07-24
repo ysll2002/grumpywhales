@@ -195,7 +195,7 @@ export default function AdminsManager({ initial, currentEmail }: { initial: User
                         )}
                       </div>
                       {hasNotes && !isOpen && (
-                        <p className="mt-2 text-xs whitespace-pre-wrap" style={{ color: 'var(--color-accent-dk)', lineHeight: 1.55 }}>
+                        <p className="mt-2 text-xs whitespace-pre-wrap" style={{ color: '#2563EB', lineHeight: 1.55 }}>
                           {r.notes}
                         </p>
                       )}
