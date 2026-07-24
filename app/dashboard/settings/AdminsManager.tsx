@@ -194,6 +194,11 @@ export default function AdminsManager({ initial, currentEmail }: { initial: User
                           </span>
                         )}
                       </div>
+                      {hasNotes && !isOpen && (
+                        <p className="mt-2 text-xs whitespace-pre-wrap" style={{ color: 'var(--color-muted)', lineHeight: 1.55 }}>
+                          {r.notes}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3" style={{ color: 'var(--color-muted)' }}>
                       {r.created_at
@@ -208,7 +213,7 @@ export default function AdminsManager({ initial, currentEmail }: { initial: User
                           style={{ color: hasNotes ? 'var(--color-accent-dk)' : 'var(--color-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
                           aria-expanded={isOpen}
                         >
-                          {isOpen ? 'Close notes' : hasNotes ? '● Notes' : 'Add note'}
+                          {isOpen ? 'Close notes' : hasNotes ? 'Edit note' : 'Add note'}
                         </button>
                         {!isSelf && r.is_admin && (
                           <button
