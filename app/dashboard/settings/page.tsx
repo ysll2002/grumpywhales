@@ -13,6 +13,7 @@ export default async function SettingsPage() {
     name:       u.name,
     created_at: u.created_at,
     is_admin:   u.is_admin,
+    notes:      u.notes,
   }));
 
   return (

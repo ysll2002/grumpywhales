@@ -4,6 +4,42 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { isPlatformAdmin } from '@/lib/platform-admin';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const NOTES_MAX = 4000;
+
+// PATCH /api/users — platform admin updates their private notes on a user.
+// Body: { email, notes }. An empty / whitespace-only notes value clears it.
+export async function PATCH(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.profileId) return NextResponse.json({ error: 'unauthorised' }, { status: 401 });
+  if (!(await isPlatformAdmin(session.user.email))) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  }
+
+  const body = await req.json().catch(() => ({})) as { email?: string; notes?: unknown };
+  const email = (body.email ?? '').trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) {
+    return NextResponse.json({ error: 'invalid_email' }, { status: 400 });
+  }
+  if (typeof body.notes !== 'string' && body.notes !== null) {
+    return NextResponse.json({ error: 'invalid_notes' }, { status: 400 });
+  }
+  const raw = typeof body.notes === 'string' ? body.notes : '';
+  if (raw.length > NOTES_MAX) {
+    return NextResponse.json({ error: 'notes_too_long', detail: `Max ${NOTES_MAX} characters.` }, { status: 400 });
+  }
+  const notes = raw.trim() === '' ? null : raw;
+
+  const upd = await supabase
+    .from('profiles')
+    .update({ admin_notes: notes })
+    .ilike('email', email)
+    .select('email')
+    .maybeSingle();
+  if (upd.error) return NextResponse.json({ error: 'update_failed', detail: upd.error.message }, { status: 500 });
+  if (!upd.data)  return NextResponse.json({ error: 'not_found' }, { status: 404 });
+
+  return NextResponse.json({ ok: true, notes });
+}
 
 // DELETE /api/users — platform admin removes a user entirely. Any admin status
 // is revoked as part of the delete. Blocked if the target owns events (they'd

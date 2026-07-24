@@ -27,13 +27,14 @@ export type PlatformUser = {
   name:       string | null;
   created_at: string | null;
   is_admin:   boolean;
+  notes:      string | null;
 };
 
 // All registered users on the platform, admin status merged from platform_admins.
 // Ordered newest signup first — small platform, one flat list is fine.
 export async function listPlatformUsers(): Promise<PlatformUser[]> {
   const [profilesRes, admins] = await Promise.all([
-    supabase.from('profiles').select('email, name, created_at').order('created_at', { ascending: false }),
+    supabase.from('profiles').select('email, name, created_at, admin_notes').order('created_at', { ascending: false }),
     listPlatformAdmins(),
   ]);
   const adminSet = new Set(admins.map(a => a.email.toLowerCase()));
@@ -42,5 +43,6 @@ export async function listPlatformUsers(): Promise<PlatformUser[]> {
     name:       p.name ?? null,
     created_at: p.created_at ?? null,
     is_admin:   adminSet.has(p.email.toLowerCase()),
+    notes:      p.admin_notes ?? null,
   }));
 }

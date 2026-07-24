@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useDialog } from '@/components/Dialog';
 
 export type UserRow = {
@@ -8,6 +8,7 @@ export type UserRow = {
   name:       string | null;
   created_at: string | null;
   is_admin:   boolean;
+  notes:      string | null;
 };
 
 export default function AdminsManager({ initial, currentEmail }: { initial: UserRow[]; currentEmail: string | null }) {
@@ -16,8 +17,42 @@ export default function AdminsManager({ initial, currentEmail }: { initial: User
   const [busy,  setBusy]  = useState(false);
   const [error, setError] = useState('');
   const [info,  setInfo]  = useState('');
+  // Which row's Notes panel is expanded, plus draft + save state for that panel.
+  const [openNotes,   setOpenNotes]   = useState<string | null>(null);
+  const [notesDraft,  setNotesDraft]  = useState('');
+  const [notesBusy,   setNotesBusy]   = useState(false);
   const { confirm, dialog } = useDialog();
   const meLower = currentEmail?.toLowerCase() ?? null;
+
+  function toggleNotes(target: string, current: string | null) {
+    if (openNotes === target) {
+      setOpenNotes(null);
+      return;
+    }
+    setOpenNotes(target);
+    setNotesDraft(current ?? '');
+    setError(''); setInfo('');
+  }
+
+  async function saveNotes(target: string) {
+    setNotesBusy(true); setError(''); setInfo('');
+    const res = await fetch('/api/users', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: target, notes: notesDraft }),
+    });
+    setNotesBusy(false);
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setError(j.detail ?? j.error ?? 'notes_save_failed');
+      return;
+    }
+    const j = await res.json().catch(() => ({})) as { notes?: string | null };
+    const saved = j.notes ?? null;
+    setRows(rs => rs.map(r => r.email.toLowerCase() === target.toLowerCase() ? { ...r, notes: saved } : r));
+    setOpenNotes(null);
+    setInfo(saved ? `Notes saved for ${target}.` : `Notes cleared for ${target}.`);
+  }
 
   async function invite(e: React.FormEvent) {
     e.preventDefault();
@@ -45,7 +80,7 @@ export default function AdminsManager({ initial, currentEmail }: { initial: User
         copy[idx] = { ...copy[idx], is_admin: true };
         return copy;
       }
-      return [{ email: trimmed, name: null, created_at: new Date().toISOString(), is_admin: true }, ...rs];
+      return [{ email: trimmed, name: null, created_at: new Date().toISOString(), is_admin: true, notes: null }, ...rs];
     });
     setEmail('');
     if (j.email_sent) {
@@ -139,36 +174,43 @@ export default function AdminsManager({ initial, currentEmail }: { initial: User
             </tr>
           </thead>
           <tbody>
-            {rows.map(r => (
-              <tr key={r.email} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div>
-                      {r.name && <div className="font-medium">{r.name}</div>}
-                      <div className={r.name ? 'text-xs' : 'font-medium'} style={r.name ? { color: 'var(--color-muted)' } : undefined}>{r.email}</div>
-                    </div>
-                    {r.is_admin && (
-                      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold"
-                        style={{ backgroundColor: '#D1FAE5', color: 'var(--color-accent-dk)' }}>
-                        Admin
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-4 py-3" style={{ color: 'var(--color-muted)' }}>
-                  {r.created_at
-                    ? new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-                    : '—'}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {(() => {
-                    const isSelf = meLower != null && r.email.toLowerCase() === meLower;
-                    if (isSelf) {
-                      return <span className="text-xs" style={{ color: 'var(--color-muted)' }}>You</span>;
-                    }
-                    return (
-                      <div className="flex items-center gap-3 justify-end">
+            {rows.map(r => {
+              const isSelf   = meLower != null && r.email.toLowerCase() === meLower;
+              const isOpen   = openNotes === r.email;
+              const hasNotes = !!r.notes && r.notes.trim().length > 0;
+              return (
+                <React.Fragment key={r.email}>
+                  <tr style={{ borderBottom: isOpen ? 'none' : '1px solid var(--color-border)' }}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div>
+                          {r.name && <div className="font-medium">{r.name}</div>}
+                          <div className={r.name ? 'text-xs' : 'font-medium'} style={r.name ? { color: 'var(--color-muted)' } : undefined}>{r.email}</div>
+                        </div>
                         {r.is_admin && (
+                          <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold"
+                            style={{ backgroundColor: '#D1FAE5', color: 'var(--color-accent-dk)' }}>
+                            Admin
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3" style={{ color: 'var(--color-muted)' }}>
+                      {r.created_at
+                        ? new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                        : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center gap-3 justify-end">
+                        <button
+                          type="button" onClick={() => toggleNotes(r.email, r.notes)}
+                          className="text-xs"
+                          style={{ color: hasNotes ? 'var(--color-accent-dk)' : 'var(--color-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+                          aria-expanded={isOpen}
+                        >
+                          {isOpen ? 'Close notes' : hasNotes ? '● Notes' : 'Add note'}
+                        </button>
+                        {!isSelf && r.is_admin && (
                           <button
                             type="button" onClick={() => removeAdmin(r.email)}
                             disabled={adminCount <= 1}
@@ -179,19 +221,62 @@ export default function AdminsManager({ initial, currentEmail }: { initial: User
                             Revoke admin
                           </button>
                         )}
-                        <button
-                          type="button" onClick={() => removeUser(r.email)}
-                          className="text-xs"
-                          style={{ color: 'var(--color-red)', background: 'none', border: 'none', cursor: 'pointer' }}
-                        >
-                          Remove
-                        </button>
+                        {!isSelf && (
+                          <button
+                            type="button" onClick={() => removeUser(r.email)}
+                            className="text-xs"
+                            style={{ color: 'var(--color-red)', background: 'none', border: 'none', cursor: 'pointer' }}
+                          >
+                            Remove
+                          </button>
+                        )}
+                        {isSelf && <span className="text-xs" style={{ color: 'var(--color-muted)' }}>You</span>}
                       </div>
-                    );
-                  })()}
-                </td>
-              </tr>
-            ))}
+                    </td>
+                  </tr>
+                  {isOpen && (
+                    <tr style={{ borderBottom: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg)' }}>
+                      <td colSpan={3} className="px-4 py-4">
+                        <label className="text-xs uppercase tracking-wider font-semibold block mb-2" style={{ color: 'var(--color-muted)' }}>
+                          Admin notes · {r.email}
+                        </label>
+                        <textarea
+                          value={notesDraft}
+                          onChange={e => setNotesDraft(e.target.value)}
+                          placeholder="Private notes visible only to platform admins."
+                          rows={4}
+                          maxLength={4000}
+                          className="w-full px-3 py-2 rounded-lg text-sm resize-y"
+                          style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', minHeight: '5rem' }}
+                        />
+                        <div className="flex items-center justify-between mt-2 gap-3 flex-wrap">
+                          <span className="text-[11px]" style={{ color: 'var(--color-muted)' }}>
+                            {notesDraft.length}/4000
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button" onClick={() => setOpenNotes(null)}
+                              className="text-xs px-3 py-1.5 rounded-full"
+                              style={{ background: 'none', border: '1px solid var(--color-border)', cursor: 'pointer' }}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button" onClick={() => saveNotes(r.email)}
+                              disabled={notesBusy}
+                              className="text-xs px-4 py-1.5 rounded-full disabled:opacity-50"
+                              style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', border: 'none', cursor: notesBusy ? 'wait' : 'pointer' }}
+                            >
+                              {notesBusy ? 'Saving…' : 'Save'}
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>
