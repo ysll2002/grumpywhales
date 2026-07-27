@@ -5,7 +5,7 @@ import { formatEventDateTime, formatMoney, computeNextOccurrences, signupOpenInf
 import AttendRequestButton from './AttendRequestButton';
 import CancelSignupButton from './CancelSignupButton';
 import PayButton from '../unpaid/PayButton';
-import SignupListLink from './SignupListLink';
+import SignupListLink, { type SignupEntry } from './SignupListLink';
 import { stripe } from '@/lib/stripe';
 import { revalidatePath } from 'next/cache';
 
@@ -178,32 +178,32 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
   // we show. One pass, bucket locally. Names are kept in sign-up order so
   // the modal reads as a roster.
   const involvedEventIds = Array.from(new Set(allAttending.map(r => r.event.id)));
-  const signupNamesByKey = new Map<string, string[]>();
+  const signupEntriesByKey = new Map<string, SignupEntry[]>();
   if (involvedEventIds.length > 0) {
     const { data: signupRows } = await supabase
       .from('event_signups')
-      .select('event_id, occurrence_date, signed_up_at, profiles(name)')
+      .select('event_id, occurrence_date, signed_up_at, status, profiles(name)')
       .in('event_id', involvedEventIds)
       .neq('status', 'cancelled')
       .order('signed_up_at', { ascending: true });
-    type Row = { event_id: string; occurrence_date: string; profiles: { name: string | null } | null };
+    type Row = { event_id: string; occurrence_date: string; status: SignupStatus; profiles: { name: string | null } | null };
     for (const r of (signupRows ?? []) as unknown as Row[]) {
       const k = `${r.event_id}:${r.occurrence_date}`;
-      const list = signupNamesByKey.get(k) ?? [];
-      list.push(r.profiles?.name ?? 'Anonymous');
-      signupNamesByKey.set(k, list);
+      const list = signupEntriesByKey.get(k) ?? [];
+      list.push({ name: r.profiles?.name ?? 'Anonymous', status: r.status });
+      signupEntriesByKey.set(k, list);
     }
   }
 
-  // Materialise extra metadata each card needs (names + sign-up window).
+  // Materialise extra metadata each card needs (entries + sign-up window).
   const enriched = allAttending.map(r => {
     const openInfo = signupOpenInfo(r.event, r.iso);
-    const names = signupNamesByKey.get(r.key) ?? [];
+    const entries = signupEntriesByKey.get(r.key) ?? [];
     return {
       ...r,
-      signedUp:    names.length,
-      signedUpNames: names,
-      opensAtIso:  openInfo.open ? null : openInfo.opensAt.toISOString(),
+      signedUp:      entries.length,
+      signedUpEntries: entries,
+      opensAtIso:    openInfo.open ? null : openInfo.opensAt.toISOString(),
     };
   });
 
@@ -283,16 +283,16 @@ function Badge({ tone, children }: { tone: { bg: string; fg: string }; children:
 }
 
 function AttendingCard({
-  event, iso, cancelled, signup, signedUp, signedUpNames, opensAtIso, past = false,
+  event, iso, cancelled, signup, signedUp, signedUpEntries, opensAtIso, past = false,
 }: {
-  event:         Event;
-  iso:           string;
-  cancelled:     boolean;
-  signup:        { id: string; status: SignupStatus; payment_status: PaymentStatus } | null;
-  signedUp:      number;
-  signedUpNames: string[];
-  opensAtIso:    string | null;
-  past?:         boolean;
+  event:           Event;
+  iso:             string;
+  cancelled:       boolean;
+  signup:          { id: string; status: SignupStatus; payment_status: PaymentStatus } | null;
+  signedUp:        number;
+  signedUpEntries: SignupEntry[];
+  opensAtIso:      string | null;
+  past?:           boolean;
 }) {
   const dateLine = formatEventDateTime(iso).toUpperCase();
   const occurrenceDate = iso.slice(0, 10);
@@ -316,7 +316,7 @@ function AttendingCard({
         {cancelled ? (
           <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>Sign-ups closed</p>
         ) : (
-          <SignupListLink names={signedUpNames} count={signedUp} capacity={event.capacity} />
+          <SignupListLink entries={signedUpEntries} count={signedUp} capacity={event.capacity} />
         )}
       </div>
 
