@@ -73,9 +73,9 @@ export default function VideoLinkButton({
         onClick={() => { setValue(url); setError(''); setOpen(true); }}
         className="px-5 py-2.5 rounded-full text-sm font-medium"
         style={{
-          backgroundColor: url ? 'var(--color-card)' : '#FFFFFF',
-          color:           'var(--color-fg)',
-          border:          '1px solid var(--color-border)',
+          backgroundColor: '#2563EB',
+          color:           '#FFFFFF',
+          border:          'none',
           cursor:          'pointer',
         }}
       >
