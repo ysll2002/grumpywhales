@@ -76,8 +76,7 @@ export default async function AttendeesPage({
       .from('event_signups')
       .select('id, status, payment_status, signed_up_at, occurrence_date, sort_order, profile_id, team_colour, profiles(name, email)')
       .eq('event_id', eventId)
-      .eq('occurrence_date', selected)
-      .neq('status', 'cancelled'),
+      .eq('occurrence_date', selected),
     supabase
       .from('event_attendance')
       .select('profile_id, occurrence_date, attended')

@@ -59,6 +59,17 @@ const STATUS_TONE: Record<SignupStatus, { bg: string; fg: string }> = {
   cancelled:  { bg: '#E5E7EB', fg: '#6B7280' },
 };
 
+// Cancelled signups are self-drops or admin removals — the row is kept for
+// audit and shown at the bottom under a 'DROP OUT' label so the roster
+// history is visible without inflating the active counts.
+const STATUS_DISPLAY: Record<SignupStatus, string> = {
+  accepted:   'accepted',
+  pending:    'pending',
+  waitlisted: 'waitlisted',
+  declined:   'declined',
+  cancelled:  'drop out',
+};
+
 const PAY_TONE: Record<PaymentStatus, { bg: string; fg: string }> = {
   free:   { bg: '#E5E7EB', fg: '#374151' },
   unpaid: { bg: '#FEE2E2', fg: 'var(--color-red)' },
@@ -92,8 +103,10 @@ export default function AttendeesTable({
     });
   }
   function toggleSelectAll() {
-    if (selected.size === rows.length) setSelected(new Set());
-    else                                setSelected(new Set(rows.map(r => r.signup_id)));
+    // Never select drop-outs — they're kept in the table for history only.
+    const selectable = rows.filter(r => r.status !== 'cancelled');
+    if (selected.size === selectable.length) setSelected(new Set());
+    else                                     setSelected(new Set(selectable.map(r => r.signup_id)));
   }
   function exitEditMode() {
     setEditMode(false);
@@ -152,20 +165,23 @@ export default function AttendeesTable({
     return TEAM_COLOUR_ORDER[v] ?? (asc ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
   }
   const sortedRows = useMemo(() => {
-    if (sortKey == null) return rows;
-    const sign = sortDir === 'asc' ? 1 : -1;
-    const asc = sortDir === 'asc';
     const arr = rows.slice();
-    arr.sort((a, b) => {
-      if (sortKey === 'signed_up')
-        return sign * (new Date(a.signed_up_at).getTime() - new Date(b.signed_up_at).getTime());
-      if (sortKey === 'past_3mo')
-        return sign * (rate(a.past_3mo_attended, a.past_3mo_total) - rate(b.past_3mo_attended, b.past_3mo_total));
-      if (sortKey === 'team_colour')
-        return sign * (teamColourRank(a.team_colour, asc) - teamColourRank(b.team_colour, asc));
-      return   sign * (rate(a.lifetime_attended, a.lifetime_total) - rate(b.lifetime_attended, b.lifetime_total));
-    });
-    return arr;
+    if (sortKey != null) {
+      const sign = sortDir === 'asc' ? 1 : -1;
+      const asc = sortDir === 'asc';
+      arr.sort((a, b) => {
+        if (sortKey === 'signed_up')
+          return sign * (new Date(a.signed_up_at).getTime() - new Date(b.signed_up_at).getTime());
+        if (sortKey === 'past_3mo')
+          return sign * (rate(a.past_3mo_attended, a.past_3mo_total) - rate(b.past_3mo_attended, b.past_3mo_total));
+        if (sortKey === 'team_colour')
+          return sign * (teamColourRank(a.team_colour, asc) - teamColourRank(b.team_colour, asc));
+        return   sign * (rate(a.lifetime_attended, a.lifetime_total) - rate(b.lifetime_attended, b.lifetime_total));
+      });
+    }
+    // Drop-outs always sink to the bottom regardless of active sort so the
+    // roster remains readable — active attendees first, history at the end.
+    return arr.sort((a, b) => Number(a.status === 'cancelled') - Number(b.status === 'cancelled'));
   }, [rows, sortKey, sortDir]);
   function sortArrow(key: SortKey): string {
     if (sortKey !== key) return '';
@@ -173,13 +189,14 @@ export default function AttendeesTable({
   }
 
   async function cancelOccurrence() {
-    const paidCount = rows.filter(r => r.payment_status === 'paid').length;
+    const active     = rows.filter(r => r.status !== 'cancelled');
+    const paidCount  = active.filter(r => r.payment_status === 'paid').length;
     const refundNote = paidCount
       ? `\n\nHeads-up: ${paidCount} attendee${paidCount === 1 ? '' : 's'} already paid. They'll be emailed about the cancellation, but you'll need to issue refunds manually in your Stripe dashboard.`
       : '';
     const ok = await confirm({
       title:        'Cancel this session?',
-      message:      `Cancel this session only? Other sessions in the series are unaffected. ${rows.length} attendee${rows.length === 1 ? '' : 's'} will be emailed.${refundNote}`,
+      message:      `Cancel this session only? Other sessions in the series are unaffected. ${active.length} attendee${active.length === 1 ? '' : 's'} will be emailed.${refundNote}`,
       confirmLabel: 'Cancel session',
       tone:         'danger',
     });
@@ -224,6 +241,8 @@ export default function AttendeesTable({
     router.refresh();
   }
 
+  const activeRows    = useMemo(() => rows.filter(r => r.status !== 'cancelled'), [rows]);
+  const dropoutCount  = useMemo(() => rows.filter(r => r.status === 'cancelled').length, [rows]);
   const acceptedCount = useMemo(() => rows.filter(r => r.status === 'accepted').length, [rows]);
   const pendingCount  = useMemo(() => rows.filter(r => r.status === 'pending').length, [rows]);
   async function publish() {
@@ -307,9 +326,12 @@ export default function AttendeesTable({
   }
 
   async function swap(idx: number, direction: -1 | 1) {
+    // idx refers to the currently-visible sortedRows order, which floats
+    // drop-outs to the bottom. Reorder that copy so the resulting rows
+    // state matches what the admin sees on-screen.
     const other = idx + direction;
-    if (other < 0 || other >= rows.length) return;
-    const next = rows.slice();
+    if (other < 0 || other >= sortedRows.length) return;
+    const next = sortedRows.slice();
     [next[idx], next[other]] = [next[other], next[idx]];
     setRows(next);
     setBusy(true);
@@ -362,9 +384,10 @@ export default function AttendeesTable({
 
       <div className="flex items-end justify-between flex-wrap gap-4 mb-6">
         <div className="flex gap-6 text-sm">
-          <Stat label="Signed up">{rows.length}</Stat>
+          <Stat label="Signed up">{activeRows.length}</Stat>
           <Stat label="Accepted">{acceptedCount}{capacity != null ? ` / ${capacity}` : ''}</Stat>
           <Stat label="Pending">{pendingCount}</Stat>
+          {dropoutCount > 0 && <Stat label="Drop out">{dropoutCount}</Stat>}
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -382,7 +405,7 @@ export default function AttendeesTable({
               <button
                 type="button"
                 onClick={() => setEditMode(true)}
-                disabled={rows.length === 0 || isCancelled}
+                disabled={activeRows.length === 0 || isCancelled}
                 className="px-5 py-2.5 rounded-full text-sm font-medium disabled:opacity-50"
                 style={{ backgroundColor: 'var(--color-accent)', color: '#FFFFFF', border: 'none', cursor: 'pointer' }}
               >
@@ -392,7 +415,7 @@ export default function AttendeesTable({
             <button
               type="button"
               onClick={publish}
-              disabled={publishing || rows.length === 0 || isCancelled}
+              disabled={publishing || activeRows.length === 0 || isCancelled}
               className="px-5 py-2.5 rounded-full text-sm font-medium disabled:opacity-50"
               style={{ backgroundColor: 'var(--color-accent-dk)', color: '#FFFFFF', border: 'none', cursor: publishing ? 'wait' : 'pointer' }}
             >
@@ -502,7 +525,7 @@ export default function AttendeesTable({
                 <Th title="Select rows to apply a bulk action">
                   <input
                     type="checkbox"
-                    checked={selected.size === rows.length && rows.length > 0}
+                    checked={selected.size === activeRows.length && activeRows.length > 0}
                     onChange={toggleSelectAll}
                     aria-label="Select all"
                     style={{ width: 16, height: 16, accentColor: 'var(--color-accent)', cursor: 'pointer' }}
@@ -529,8 +552,11 @@ export default function AttendeesTable({
             </tr>
           </thead>
           <tbody>
-            {sortedRows.map((r, idx) => (
-              <tr key={r.signup_id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+            {sortedRows.map((r, idx) => {
+              const droppedOut = r.status === 'cancelled';
+              const lastActiveIdx = activeRows.length - 1;
+              return (
+              <tr key={r.signup_id} style={{ borderBottom: '1px solid var(--color-border)', opacity: droppedOut ? 0.55 : 1 }}>
                 <Td muted>{idx + 1}</Td>
                 {editMode && (
                   <Td>
@@ -538,8 +564,9 @@ export default function AttendeesTable({
                       type="checkbox"
                       checked={selected.has(r.signup_id)}
                       onChange={() => toggleSelected(r.signup_id)}
+                      disabled={droppedOut}
                       aria-label={`Select ${r.name ?? r.email ?? ''}`}
-                      style={{ width: 16, height: 16, accentColor: 'var(--color-accent)', cursor: 'pointer' }}
+                      style={{ width: 16, height: 16, accentColor: 'var(--color-accent)', cursor: droppedOut ? 'not-allowed' : 'pointer' }}
                     />
                   </Td>
                 )}
@@ -549,7 +576,7 @@ export default function AttendeesTable({
                 </Td>
                 <Td muted>{new Date(r.signed_up_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</Td>
                 <Td>
-                  {editMode ? (
+                  {editMode && !droppedOut ? (
                     <select
                       value={r.status}
                       onChange={e => changeStatus(r.signup_id, e.target.value as SignupStatus)}
@@ -563,12 +590,12 @@ export default function AttendeesTable({
                       className="text-xs uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold inline-block"
                       style={{ backgroundColor: STATUS_TONE[r.status].bg, color: STATUS_TONE[r.status].fg }}
                     >
-                      {r.status}
+                      {STATUS_DISPLAY[r.status]}
                     </span>
                   )}
                 </Td>
                 <Td>
-                  {r.status === 'pending' ? (
+                  {droppedOut || r.status === 'pending' ? (
                     <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold"
                       style={{ backgroundColor: '#E5E7EB', color: '#6B7280' }}>
                       N/A
@@ -597,11 +624,11 @@ export default function AttendeesTable({
                 <Td>
                   <div className="flex gap-1">
                     <button type="button" onClick={() => swap(idx, -1)}
-                      disabled={idx === 0 || busy || sortKey != null}
+                      disabled={idx === 0 || busy || sortKey != null || droppedOut}
                       title={sortKey != null ? 'Disabled while a column sort is active — clear the sort to reorder manually.' : 'Move up'}
                       className="px-2 py-0.5 text-xs rounded disabled:opacity-30" style={{ background: 'transparent', border: '1px solid var(--color-border)', cursor: 'pointer' }}>↑</button>
                     <button type="button" onClick={() => swap(idx,  1)}
-                      disabled={idx === rows.length - 1 || busy || sortKey != null}
+                      disabled={idx >= lastActiveIdx || busy || sortKey != null || droppedOut}
                       title={sortKey != null ? 'Disabled while a column sort is active — clear the sort to reorder manually.' : 'Move down'}
                       className="px-2 py-0.5 text-xs rounded disabled:opacity-30" style={{ background: 'transparent', border: '1px solid var(--color-border)', cursor: 'pointer' }}>↓</button>
                   </div>
@@ -619,7 +646,8 @@ export default function AttendeesTable({
                   </button>
                 </Td>
               </tr>
-            ))}
+              );
+            })}
             {rows.length === 0 && (
               <tr><td colSpan={editMode ? 11 : 10} className="p-8 text-center text-sm" style={{ color: 'var(--color-muted)' }}>No-one has signed up yet.</td></tr>
             )}
