@@ -199,11 +199,13 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
   const enriched = allAttending.map(r => {
     const openInfo = signupOpenInfo(r.event, r.iso);
     const entries = signupEntriesByKey.get(r.key) ?? [];
+    const occDate = r.iso.slice(0, 10);
     return {
       ...r,
       signedUp:      entries.length,
       signedUpEntries: entries,
       opensAtIso:    openInfo.open ? null : openInfo.opensAt.toISOString(),
+      videoUrl:      r.event.video_links?.[occDate] ?? null,
     };
   });
 
@@ -283,7 +285,7 @@ function Badge({ tone, children }: { tone: { bg: string; fg: string }; children:
 }
 
 function AttendingCard({
-  event, iso, cancelled, signup, signedUp, signedUpEntries, opensAtIso, past = false,
+  event, iso, cancelled, signup, signedUp, signedUpEntries, opensAtIso, videoUrl, past = false,
 }: {
   event:           Event;
   iso:             string;
@@ -292,6 +294,7 @@ function AttendingCard({
   signedUp:        number;
   signedUpEntries: SignupEntry[];
   opensAtIso:      string | null;
+  videoUrl:        string | null;
   past?:           boolean;
 }) {
   const dateLine = formatEventDateTime(iso).toUpperCase();
@@ -317,6 +320,17 @@ function AttendingCard({
           <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>Sign-ups closed</p>
         ) : (
           <SignupListLink entries={signedUpEntries} count={signedUp} capacity={event.capacity} />
+        )}
+        {signup && videoUrl && (
+          <a
+            href={videoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm mt-1 inline-block"
+            style={{ color: 'var(--color-accent-dk)', textDecoration: 'underline', textUnderlineOffset: 3 }}
+          >
+            ▶ Watch video
+          </a>
         )}
       </div>
 

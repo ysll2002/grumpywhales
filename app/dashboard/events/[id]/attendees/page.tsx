@@ -166,6 +166,7 @@ export default async function AttendeesPage({
         publishedAt={ev.attendees_published_at}
         cancelled={(ev.cancelled_dates ?? []).includes(selected)}
         isRecurring={ev.recurrence !== 'none'}
+        videoUrl={ev.video_links?.[selected] ?? null}
         initial={initial}
       />
     </div>

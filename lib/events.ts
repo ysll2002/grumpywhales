@@ -48,6 +48,7 @@ export type Event = {
   attendees_published_at:     string | null;
   cancelled_dates:            string[];   // DATE[] in DB, "YYYY-MM-DD" strings here
   published_occurrence_dates: string[];   // dates whose final list has been emailed
+  video_links:                Record<string, string>;  // occurrence_date → video URL
   signup_open_dow:            number | null;   // 0=Sun..6=Sat (weekly events only)
   signup_open_time:           string | null;   // 'HH:MM' or 'HH:MM:SS' UTC (weekly only)
   created_at:                 string;

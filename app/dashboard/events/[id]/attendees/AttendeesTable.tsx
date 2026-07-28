@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { SignupStatus, PaymentStatus, TeamColour } from '@/lib/signups';
 import { TEAM_COLOURS } from '@/lib/signups';
 import { useDialog } from '@/components/Dialog';
+import VideoLinkButton from './VideoLinkButton';
 
 export type AttendeeRow = {
   signup_id:         string;
@@ -31,6 +32,7 @@ type Props = {
   publishedAt:      string | null;
   cancelled:        boolean;
   isRecurring:      boolean;
+  videoUrl:         string | null;
   initial:          AttendeeRow[];
 };
 
@@ -64,7 +66,7 @@ const PAY_TONE: Record<PaymentStatus, { bg: string; fg: string }> = {
 };
 
 export default function AttendeesTable({
-  eventId, occurrenceDate, eventStarted, capacity, publishedAt, cancelled, isRecurring,
+  eventId, occurrenceDate, eventStarted, capacity, publishedAt, cancelled, isRecurring, videoUrl,
   initial,
 }: Props) {
   const router = useRouter();
@@ -396,6 +398,11 @@ export default function AttendeesTable({
             >
               {publishing ? 'Sending…' : lastPub ? 'Re-notify all players' : 'Notify all players'}
             </button>
+            <VideoLinkButton
+              eventId={eventId}
+              occurrenceDate={occurrenceDate}
+              initialUrl={videoUrl}
+            />
             {isRecurring && !isCancelled && (
               <button
                 type="button" onClick={cancelOccurrence} disabled={cancelBusy}
