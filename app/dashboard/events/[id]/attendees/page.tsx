@@ -17,6 +17,7 @@ type SignupQueryRow = {
   status:          string;
   payment_status:  string;
   signed_up_at:    string;
+  updated_at:      string;
   occurrence_date: string;
   sort_order:      number | null;
   profile_id:      string;
@@ -74,7 +75,7 @@ export default async function AttendeesPage({
   const [{ data: signupRows }, { data: attendanceRows }] = await Promise.all([
     supabase
       .from('event_signups')
-      .select('id, status, payment_status, signed_up_at, occurrence_date, sort_order, profile_id, team_colour, profiles(name, email)')
+      .select('id, status, payment_status, signed_up_at, updated_at, occurrence_date, sort_order, profile_id, team_colour, profiles(name, email)')
       .eq('event_id', eventId)
       .eq('occurrence_date', selected),
     supabase
@@ -100,6 +101,7 @@ export default async function AttendeesPage({
       payment_status:    s.payment_status as AttendeeRow['payment_status'],
       team_colour:       s.team_colour as AttendeeRow['team_colour'],
       signed_up_at:      s.signed_up_at,
+      updated_at:        s.updated_at,
       sort_order:        s.sort_order,
       attended_today:    thisOccurrenceMark?.attended ?? null,
       past_3mo_attended: past3.filter(a => a.attended).length,

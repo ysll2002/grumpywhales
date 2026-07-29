@@ -16,6 +16,7 @@ export type AttendeeRow = {
   payment_status:    PaymentStatus;
   team_colour:       TeamColour | null;
   signed_up_at:      string;
+  updated_at:        string;
   sort_order:        number | null;
   attended_today:    boolean | null;   // null = not yet recorded for this event's date
   past_3mo_attended: number;
@@ -574,7 +575,14 @@ export default function AttendeesTable({
                   <div className="font-medium">{r.name ?? '—'}</div>
                   <div className="text-xs" style={{ color: 'var(--color-muted)' }}>{r.email}</div>
                 </Td>
-                <Td muted>{new Date(r.signed_up_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</Td>
+                <Td muted>
+                  <div>{new Date(r.signed_up_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                  {droppedOut && (
+                    <div className="text-xs mt-0.5" style={{ color: 'var(--color-red)' }}>
+                      dropped {new Date(r.updated_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  )}
+                </Td>
                 <Td>
                   {editMode && !droppedOut ? (
                     <select
