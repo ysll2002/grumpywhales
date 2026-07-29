@@ -147,6 +147,82 @@ export function attendeeListPublishEmail(opts: PublishOpts) {
   return { subject, text, html };
 }
 
+// ─── Single-attendee 'you're accepted' email ─────────────────────────────────
+// Fired the moment an admin flips an attendee's status to 'accepted' (via
+// PATCH on the signup row). Includes a Pay button when there's an unpaid fee.
+type AttendeeAcceptedOpts = {
+  attendeeName: string | null;
+  event: {
+    title:        string;
+    location:     string | null;
+    fee_amount:   number;
+    fee_currency: string;
+  };
+  occurrenceIso: string;
+  paymentStatus: 'free' | 'unpaid' | 'paid';
+  eventUrl:      string;
+};
+
+const CLUB_SIGNATURE = 'Gunnersbury Athletics FC';
+
+export function attendeeAcceptedEmail(opts: AttendeeAcceptedOpts) {
+  const { attendeeName, event, occurrenceIso, paymentStatus, eventUrl } = opts;
+  const greet = attendeeName ? `Hi ${attendeeName.split(' ')[0]}` : 'Hi there';
+  const startsLabel = new Date(occurrenceIso).toLocaleString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London',
+  });
+  const feeLabel  = event.fee_amount > 0 ? formatMoney(event.fee_amount, event.fee_currency) : 'Free';
+  const needsPay  = paymentStatus === 'unpaid' && event.fee_amount > 0;
+
+  const subject = `You're in for ${event.title} — ${new Date(occurrenceIso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Europe/London' })}`;
+
+  const detailLines = [
+    `Event: ${event.title}`,
+    `When:  ${startsLabel}`,
+    event.location ? `Where: ${event.location}` : '',
+    `Fee:   ${feeLabel}`,
+  ].filter(Boolean).join('\n');
+
+  const text = [
+    `${greet},`,
+    ``,
+    `You're confirmed for this session.`,
+    ``,
+    detailLines,
+    ``,
+    needsPay
+      ? `Please pay your ${feeLabel} session fee to secure your spot: ${eventUrl}`
+      : `Event page: ${eventUrl}`,
+    ``,
+    `— ${CLUB_SIGNATURE}`,
+  ].filter(Boolean).join('\n');
+
+  const detailRows = `
+    <tr><td style="padding:6px 12px;color:#6B6B6B;">When</td><td style="padding:6px 12px;">${escapeHtml(startsLabel)}</td></tr>
+    ${event.location ? `<tr><td style="padding:6px 12px;color:#6B6B6B;">Where</td><td style="padding:6px 12px;">${escapeHtml(event.location)}</td></tr>` : ''}
+    <tr><td style="padding:6px 12px;color:#6B6B6B;">Fee</td><td style="padding:6px 12px;">${escapeHtml(feeLabel)}</td></tr>
+  `;
+
+  const ctaLabel = needsPay ? `Pay ${feeLabel} now →` : `View event page →`;
+
+  const html = `<!doctype html><html><body style="font-family:-apple-system,system-ui,sans-serif;background:#FAF7F0;padding:24px;color:#0F1A14;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #E5E2D8;border-radius:16px;padding:28px;">
+    <h1 style="margin:0 0 16px 0;font-size:22px;color:#0A4D2E;">You're in for ${escapeHtml(event.title)}</h1>
+    <p style="margin:0 0 12px 0;">${escapeHtml(greet)},</p>
+    <p style="margin:0 0 18px 0;">You're confirmed for this session.</p>
+    <table style="border-collapse:collapse;width:100%;font-size:14px;margin-bottom:18px;background:#FAF7F0;border-radius:10px;overflow:hidden;">${detailRows}</table>
+    ${needsPay ? `<p style="margin:0 0 12px 0;">Please pay your <strong>${escapeHtml(feeLabel)}</strong> session fee to secure your spot.</p>` : ''}
+    <p style="margin:0 0 18px 0;">
+      <a href="${escapeHtml(eventUrl)}" style="display:inline-block;background:${needsPay ? '#2563EB' : '#00A859'};color:#fff;text-decoration:none;padding:10px 18px;border-radius:999px;font-weight:600;">${escapeHtml(ctaLabel)}</a>
+    </p>
+    <p style="margin:0;color:#6B6B6B;font-size:13px;">— ${escapeHtml(CLUB_SIGNATURE)}</p>
+  </div>
+</body></html>`;
+
+  return { subject, text, html };
+}
+
 // ─── Occurrence cancelled email ──────────────────────────────────────────────
 // Sent to every non-cancelled attendee when the host cancels a specific
 // session of a recurring event.

@@ -4,6 +4,8 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { isEventAdmin } from '@/lib/event-admin';
 import type { SignupStatus, PaymentStatus } from '@/lib/signups';
 import { TEAM_COLOUR_KEYS, type TeamColour } from '@/lib/signups';
+import { sendEmail } from '@/lib/email';
+import { attendeeAcceptedEmail } from '@/lib/email-templates';
 
 const VALID_STATUS:  SignupStatus[]  = ['accepted', 'pending', 'waitlisted', 'declined', 'cancelled'];
 const VALID_PAYMENT: PaymentStatus[] = ['free', 'unpaid', 'paid'];
@@ -50,6 +52,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'nothing_to_update' }, { status: 400 });
   }
 
+  // Snapshot the previous status so we can detect the pending → accepted
+  // transition after the update and fire the acceptance email exactly once
+  // (bulk edits hit this endpoint per-row, so per-transition is correct).
+  const { data: prev } = await supabase
+    .from('event_signups')
+    .select('status')
+    .eq('id', signupId)
+    .eq('event_id', eventId)
+    .maybeSingle();
+
   const { data, error } = await supabase
     .from('event_signups')
     .update(patch)
@@ -60,7 +72,53 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (error) return NextResponse.json({ error: 'update_failed', detail: error.message }, { status: 500 });
   if (!data)  return NextResponse.json({ error: 'not_found' }, { status: 404 });
+
+  if (patch.status === 'accepted' && prev?.status !== 'accepted') {
+    // Fire-and-forget: email failure must not fail the admin's status change.
+    notifyAccepted(eventId, data as { occurrence_date: string; payment_status: PaymentStatus; profile_id: string; fee_amount: number | null; fee_currency: string | null })
+      .catch(err => console.error('[signups] accepted email failed', err));
+  }
+
   return NextResponse.json({ signup: data });
+}
+
+async function notifyAccepted(
+  eventId: string,
+  signup: { occurrence_date: string; payment_status: PaymentStatus; profile_id: string; fee_amount: number | null; fee_currency: string | null },
+): Promise<void> {
+  const [eventRes, profileRes] = await Promise.all([
+    supabase.from('events').select('title, starts_at, location, fee_amount, fee_currency').eq('id', eventId).maybeSingle(),
+    supabase.from('profiles').select('name, email').eq('id', signup.profile_id).maybeSingle(),
+  ]);
+  const event   = eventRes.data;
+  const profile = profileRes.data;
+  if (!event || !profile?.email) return;
+
+  // Resolve the fee: prefer the per-signup snapshot (frozen at accept/paid
+  // time), fall back to the event's current price for still-live signups.
+  const feeAmount   = signup.fee_amount   ?? event.fee_amount;
+  const feeCurrency = signup.fee_currency ?? event.fee_currency;
+
+  // Only the 'please pay to secure your spot' variant goes out — free
+  // events and already-paid signups don't need this nudge.
+  if (signup.payment_status !== 'unpaid' || feeAmount <= 0) return;
+
+  // Combine event.starts_at (time-of-day) with occurrence_date to get the
+  // exact session moment for the email header/table.
+  const seriesStart     = new Date(event.starts_at);
+  const [y, m, d]       = signup.occurrence_date.split('-').map(Number);
+  const occurrenceStart = new Date(seriesStart);
+  occurrenceStart.setUTCFullYear(y, m - 1, d);
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://grumpywhales.com';
+  const { subject, text, html } = attendeeAcceptedEmail({
+    attendeeName:  profile.name,
+    event:         { title: event.title, location: event.location, fee_amount: feeAmount, fee_currency: feeCurrency },
+    occurrenceIso: occurrenceStart.toISOString(),
+    paymentStatus: signup.payment_status,
+    eventUrl:      `${baseUrl}/dashboard/events`,
+  });
+  await sendEmail({ to: profile.email, subject, text, html });
 }
 
 // DELETE /api/events/:id/signups/:signupId — admin hard-removes a signup row.
