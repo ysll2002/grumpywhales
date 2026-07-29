@@ -99,10 +99,6 @@ async function notifyAccepted(
   const feeAmount   = signup.fee_amount   ?? event.fee_amount;
   const feeCurrency = signup.fee_currency ?? event.fee_currency;
 
-  // Only the 'please pay to secure your spot' variant goes out — free
-  // events and already-paid signups don't need this nudge.
-  if (signup.payment_status !== 'unpaid' || feeAmount <= 0) return;
-
   // Combine event.starts_at (time-of-day) with occurrence_date to get the
   // exact session moment for the email header/table.
   const seriesStart     = new Date(event.starts_at);
