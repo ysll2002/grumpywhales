@@ -3,13 +3,11 @@ import { auth } from '@/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { isEventAdmin } from '@/lib/event-admin';
 import { sendEmail } from '@/lib/email';
-import { attendeeListPublishEmail, type RosterEntry } from '@/lib/email-templates';
+import { attendeeListPublishEmail } from '@/lib/email-templates';
 
 type SignupForEmail = {
-  status:       'accepted' | 'declined' | 'waiting_list';
-  signed_up_at: string;
-  team_colour:  string | null;
-  profiles:     { name: string | null; email: string } | null;
+  status:   'accepted' | 'declined' | 'waiting_list';
+  profiles: { name: string | null; email: string } | null;
 };
 
 // POST /api/events/:id/publish — emails every non-cancelled attendee for the
@@ -28,36 +26,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'missing_occurrence_date' }, { status: 400 });
   }
 
-  // Event + host details
   const { data: event } = await supabase
     .from('events')
-    .select('title, starts_at, location, fee_amount, fee_currency, payment_reference, admin_id, published_occurrence_dates')
+    .select('title, starts_at, location, fee_amount, fee_currency, published_occurrence_dates')
     .eq('id', eventId)
     .maybeSingle();
   if (!event) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
-  const { data: host } = await supabase
-    .from('profiles').select('name').eq('id', event.admin_id).maybeSingle();
-  const hostName = host?.name ?? null;
-
   // Signups for this specific occurrence.
   const { data: signupRows } = await supabase
     .from('event_signups')
-    .select('status, signed_up_at, team_colour, profiles(name, email)')
+    .select('status, profiles(name, email)')
     .eq('event_id', eventId)
     .eq('occurrence_date', body.occurrence_date)
     .neq('status', 'cancelled')
     .order('signed_up_at', { ascending: true });
   const signups = (signupRows ?? []) as unknown as SignupForEmail[];
-
-  // Shared team sheet that goes into every email, so all players see the
-  // same roster regardless of their own status.
-  const roster: RosterEntry[] = signups.map(s => ({
-    name:         s.profiles?.name ?? null,
-    signed_up_at: s.signed_up_at,
-    status:       s.status,
-    team_colour:  s.team_colour,
-  }));
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://grumpywhales.com';
   const eventUrl = `${baseUrl}/dashboard/events`;
@@ -78,9 +62,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       attendeeName: s.profiles.name,
       status:       s.status,
       event:        eventForEmail,
-      hostName,
       eventUrl,
-      roster,
     });
     await sendEmail({ to: s.profiles.email, subject, text, html });
     return { sent: true };

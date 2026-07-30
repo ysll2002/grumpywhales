@@ -5,7 +5,7 @@ import { isEventAdmin } from '@/lib/event-admin';
 import type { SignupStatus, PaymentStatus } from '@/lib/signups';
 import { TEAM_COLOUR_KEYS, type TeamColour } from '@/lib/signups';
 import { sendEmail } from '@/lib/email';
-import { attendeeAcceptedEmail } from '@/lib/email-templates';
+import { attendeeAcceptedEmail, attendeeMovedToWaitingListEmail } from '@/lib/email-templates';
 
 const VALID_STATUS:  SignupStatus[]  = ['accepted', 'waiting_list', 'declined', 'cancelled'];
 const VALID_PAYMENT: PaymentStatus[] = ['free', 'unpaid', 'paid'];
@@ -78,6 +78,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     notifyAccepted(eventId, data as { occurrence_date: string; payment_status: PaymentStatus; profile_id: string; fee_amount: number | null; fee_currency: string | null })
       .catch(err => console.error('[signups] accepted email failed', err));
   }
+  if (patch.status === 'waiting_list' && prev?.status === 'accepted') {
+    // A previously-accepted attendee is being pulled back — they need a
+    // heads-up, plus a refund pointer if they'd already paid.
+    notifyMovedToWaitingList(eventId, data as { occurrence_date: string; payment_status: PaymentStatus; profile_id: string; fee_amount: number | null; fee_currency: string | null })
+      .catch(err => console.error('[signups] moved-to-waiting-list email failed', err));
+  }
 
   return NextResponse.json({ signup: data });
 }
@@ -112,6 +118,36 @@ async function notifyAccepted(
     event:         { title: event.title, location: event.location, fee_amount: feeAmount, fee_currency: feeCurrency },
     occurrenceIso: occurrenceStart.toISOString(),
     paymentStatus: signup.payment_status,
+    eventUrl:      `${baseUrl}/dashboard/events`,
+  });
+  await sendEmail({ to: profile.email, subject, text, html });
+}
+
+async function notifyMovedToWaitingList(
+  eventId: string,
+  signup: { occurrence_date: string; payment_status: PaymentStatus; profile_id: string; fee_amount: number | null; fee_currency: string | null },
+): Promise<void> {
+  const [eventRes, profileRes] = await Promise.all([
+    supabase.from('events').select('title, starts_at, location, fee_amount, fee_currency').eq('id', eventId).maybeSingle(),
+    supabase.from('profiles').select('name, email').eq('id', signup.profile_id).maybeSingle(),
+  ]);
+  const event   = eventRes.data;
+  const profile = profileRes.data;
+  if (!event || !profile?.email) return;
+
+  const feeAmount   = signup.fee_amount   ?? event.fee_amount;
+  const feeCurrency = signup.fee_currency ?? event.fee_currency;
+
+  const seriesStart     = new Date(event.starts_at);
+  const [y, m, d]       = signup.occurrence_date.split('-').map(Number);
+  const occurrenceStart = new Date(seriesStart);
+  occurrenceStart.setUTCFullYear(y, m - 1, d);
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://grumpywhales.com';
+  const { subject, text, html } = attendeeMovedToWaitingListEmail({
+    attendeeName:  profile.name,
+    event:         { title: event.title, location: event.location, fee_amount: feeAmount, fee_currency: feeCurrency },
+    occurrenceIso: occurrenceStart.toISOString(),
     eventUrl:      `${baseUrl}/dashboard/events`,
   });
   await sendEmail({ to: profile.email, subject, text, html });

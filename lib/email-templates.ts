@@ -1,53 +1,26 @@
 import { formatMoney } from './events';
-import { TEAM_COLOURS, type TeamColour } from './signups';
 
-const TEAM_COLOUR_BY_KEY = new Map(TEAM_COLOURS.map(c => [c.value, c] as const));
-function teamColourLabel(key: string | null): string {
-  if (!key) return 'N/A';
-  return TEAM_COLOUR_BY_KEY.get(key as TeamColour)?.label ?? 'N/A';
-}
-function teamColourSwatch(key: string | null): { swatch: string; fg: string } | null {
-  if (!key) return null;
-  const c = TEAM_COLOUR_BY_KEY.get(key as TeamColour);
-  return c ? { swatch: c.swatch, fg: c.fg } : null;
-}
-function statusLabel(s: string): string {
-  if (s === 'accepted')     return 'Accepted';
-  if (s === 'declined')     return 'Not selected';
-  if (s === 'waiting_list') return 'Waiting list';
-  return s;
-}
+const CLUB_SIGNATURE = 'Gunnersbury Athletics FC';
 
 // ─── Attendee-list publish email ─────────────────────────────────────────────
 // Sent to every non-cancelled attendee when the host clicks 'Notify all
-// players' on the Attendees page. Tone + headline depends on the attendee's
-// final status; the body also contains the full roster (name, signed-up
-// time, status, team colour) so everyone can see the team sheet.
-export type RosterEntry = {
-  name:         string | null;
-  signed_up_at: string;
-  status:       'accepted' | 'declined' | 'waiting_list';
-  team_colour:  string | null;
-};
-
+// players' on the Attendees page. Same clean layout as the single-attendee
+// accepted email, with the headline + intro adapted per final status.
 type PublishOpts = {
   attendeeName: string | null;
   status:       'accepted' | 'declined' | 'waiting_list';
   event: {
-    title:             string;
-    starts_at:         string;
-    location:          string | null;
-    fee_amount:        number;
-    fee_currency:      string;
-    payment_reference: string | null;
+    title:        string;
+    starts_at:    string;
+    location:     string | null;
+    fee_amount:   number;
+    fee_currency: string;
   };
-  hostName: string | null;
   eventUrl: string;
-  roster:   RosterEntry[];
 };
 
 export function attendeeListPublishEmail(opts: PublishOpts) {
-  const { attendeeName, status, event, hostName, eventUrl, roster } = opts;
+  const { attendeeName, status, event, eventUrl } = opts;
   const greet = attendeeName ? `Hi ${attendeeName.split(' ')[0]}` : 'Hi there';
   const startsLabel = new Date(event.starts_at).toLocaleString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -61,82 +34,48 @@ export function attendeeListPublishEmail(opts: PublishOpts) {
 
   const intro =
     status === 'accepted'
-      ? "You're confirmed. Here are the details:"
+      ? "You're confirmed for this session."
+      : status === 'waiting_list'
+      ? "You're on the waiting list — we'll let you know once the final line-up is confirmed."
       : "Thanks for signing up. Unfortunately you didn't make the final list this time.";
 
+  // Declined recipients don't need the details table — they're not playing.
   const detailRows = status === 'declined' ? '' : `
     <tr><td style="padding:6px 12px;color:#6B6B6B;">When</td><td style="padding:6px 12px;">${escapeHtml(startsLabel)}</td></tr>
     ${event.location ? `<tr><td style="padding:6px 12px;color:#6B6B6B;">Where</td><td style="padding:6px 12px;">${escapeHtml(event.location)}</td></tr>` : ''}
     <tr><td style="padding:6px 12px;color:#6B6B6B;">Fee</td><td style="padding:6px 12px;">${escapeHtml(feeLabel)}</td></tr>
   `;
 
-  // Roster table — same for everyone, so any player can see the team sheet.
-  const rosterRowsHtml = roster.map((r, i) => {
-    const sw = teamColourSwatch(r.team_colour);
-    const colourCell = sw
-      ? `<span style="display:inline-block;background:${sw.swatch};color:${sw.fg};padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid #E5E2D8;">${escapeHtml(teamColourLabel(r.team_colour))}</span>`
-      : `<span style="color:#6B6B6B;">N/A</span>`;
-    const signedUp = new Date(r.signed_up_at).toLocaleString('en-GB', {
-      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London',
-    });
-    const rowBg = i % 2 === 0 ? '#FFFFFF' : '#FAF7F0';
-    return `<tr style="background:${rowBg};">
-      <td style="padding:8px 12px;font-size:14px;">${escapeHtml(r.name ?? '—')}</td>
-      <td style="padding:8px 12px;font-size:13px;color:#6B6B6B;white-space:nowrap;">${escapeHtml(signedUp)}</td>
-      <td style="padding:8px 12px;font-size:13px;">${escapeHtml(statusLabel(r.status))}</td>
-      <td style="padding:8px 12px;">${colourCell}</td>
-    </tr>`;
-  }).join('');
-  const rosterHtml = roster.length === 0 ? '' : `
-    <h2 style="margin:24px 0 10px 0;font-size:15px;color:#0F1A14;text-transform:uppercase;letter-spacing:0.05em;">Team sheet</h2>
-    <table style="border-collapse:collapse;width:100%;font-size:14px;border:1px solid #E5E2D8;border-radius:10px;overflow:hidden;">
-      <thead><tr style="background:#0A4D2E;color:#FFFFFF;text-align:left;">
-        <th style="padding:8px 12px;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Player</th>
-        <th style="padding:8px 12px;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Signed up</th>
-        <th style="padding:8px 12px;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Status</th>
-        <th style="padding:8px 12px;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Team</th>
-      </tr></thead>
-      <tbody>${rosterRowsHtml}</tbody>
-    </table>`;
-
-  const rosterText = roster.length === 0 ? '' : [
-    ``,
-    `Team sheet:`,
-    ...roster.map(r => {
-      const signedUp = new Date(r.signed_up_at).toLocaleString('en-GB', {
-        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London',
-      });
-      return `  • ${r.name ?? '—'}  ·  signed up ${signedUp}  ·  ${statusLabel(r.status)}  ·  ${teamColourLabel(r.team_colour)}`;
-    }),
-  ].join('\n');
+  const headlineColour =
+    status === 'accepted' ? '#0A4D2E' :
+    status === 'declined' ? '#7F1D1D' :
+                            '#7C5800';
 
   const subject = headline;
   const text = [
     `${greet},`,
     ``,
     intro,
-    status !== 'declined' ? `Event:     ${event.title}` : '',
-    status !== 'declined' ? `When:      ${startsLabel}` : '',
-    status !== 'declined' && event.location ? `Where:     ${event.location}` : '',
-    status !== 'declined' ? `Fee:       ${feeLabel}` : '',
-    rosterText,
+    status !== 'declined' ? `Event: ${event.title}` : '',
+    status !== 'declined' ? `When:  ${startsLabel}`  : '',
+    status !== 'declined' && event.location ? `Where: ${event.location}` : '',
+    status !== 'declined' ? `Fee:   ${feeLabel}`     : '',
     ``,
     `Event page: ${eventUrl}`,
     ``,
-    hostName ? `— ${hostName}` : '— GrumpyWhales',
+    `— ${CLUB_SIGNATURE}`,
   ].filter(Boolean).join('\n');
 
   const html = `<!doctype html><html><body style="font-family:-apple-system,system-ui,sans-serif;background:#FAF7F0;padding:24px;color:#0F1A14;">
-  <div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #E5E2D8;border-radius:16px;padding:28px;">
-    <h1 style="margin:0 0 16px 0;font-size:22px;color:${status === 'accepted' ? '#0A4D2E' : status === 'declined' ? '#7F1D1D' : '#7C5800'};">${escapeHtml(headline)}</h1>
+  <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #E5E2D8;border-radius:16px;padding:28px;">
+    <h1 style="margin:0 0 16px 0;font-size:22px;color:${headlineColour};">${escapeHtml(headline)}</h1>
     <p style="margin:0 0 12px 0;">${escapeHtml(greet)},</p>
     <p style="margin:0 0 18px 0;">${escapeHtml(intro)}</p>
     ${detailRows ? `<table style="border-collapse:collapse;width:100%;font-size:14px;margin-bottom:18px;background:#FAF7F0;border-radius:10px;overflow:hidden;">${detailRows}</table>` : ''}
-    ${rosterHtml}
-    <p style="margin:18px 0;">
+    <p style="margin:0 0 18px 0;">
       <a href="${escapeHtml(eventUrl)}" style="display:inline-block;background:#00A859;color:#fff;text-decoration:none;padding:10px 18px;border-radius:999px;font-weight:600;">View event page →</a>
     </p>
-    <p style="margin:0;color:#6B6B6B;font-size:13px;">${hostName ? `— ${escapeHtml(hostName)}` : '— GrumpyWhales'}</p>
+    <p style="margin:0;color:#6B6B6B;font-size:13px;">— ${escapeHtml(CLUB_SIGNATURE)}</p>
   </div>
 </body></html>`;
 
@@ -158,8 +97,6 @@ type AttendeeAcceptedOpts = {
   paymentStatus: 'free' | 'unpaid' | 'paid';
   eventUrl:      string;
 };
-
-const CLUB_SIGNATURE = 'Gunnersbury Athletics FC';
 
 export function attendeeAcceptedEmail(opts: AttendeeAcceptedOpts) {
   const { attendeeName, event, occurrenceIso, paymentStatus, eventUrl } = opts;
@@ -211,6 +148,74 @@ export function attendeeAcceptedEmail(opts: AttendeeAcceptedOpts) {
     ${needsPay ? `<p style="margin:0 0 12px 0;">Please pay your <strong>${escapeHtml(feeLabel)}</strong> session fee to secure your spot.</p>` : ''}
     <p style="margin:0 0 18px 0;">
       <a href="${escapeHtml(eventUrl)}" style="display:inline-block;background:${needsPay ? '#2563EB' : '#00A859'};color:#fff;text-decoration:none;padding:10px 18px;border-radius:999px;font-weight:600;">${escapeHtml(ctaLabel)}</a>
+    </p>
+    <p style="margin:0;color:#6B6B6B;font-size:13px;">— ${escapeHtml(CLUB_SIGNATURE)}</p>
+  </div>
+</body></html>`;
+
+  return { subject, text, html };
+}
+
+// ─── Single-attendee 'moved back to waiting list' email ─────────────────────
+// Fired when an admin flips a previously-accepted attendee back to
+// waiting_list — they were "in" and now they're not, so we owe them a
+// heads-up.
+type AttendeeMovedToWaitingListOpts = {
+  attendeeName: string | null;
+  event: {
+    title:        string;
+    location:     string | null;
+    fee_amount:   number;
+    fee_currency: string;
+  };
+  occurrenceIso: string;
+  eventUrl:      string;
+};
+
+export function attendeeMovedToWaitingListEmail(opts: AttendeeMovedToWaitingListOpts) {
+  const { attendeeName, event, occurrenceIso, eventUrl } = opts;
+  const greet = attendeeName ? `Hi ${attendeeName.split(' ')[0]}` : 'Hi there';
+  const startsLabel = new Date(occurrenceIso).toLocaleString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London',
+  });
+  const feeLabel = event.fee_amount > 0 ? formatMoney(event.fee_amount, event.fee_currency) : 'Free';
+
+  const subject = `Update on ${event.title} — moved to the waiting list`;
+
+  const detailLines = [
+    `Event: ${event.title}`,
+    `When:  ${startsLabel}`,
+    event.location ? `Where: ${event.location}` : '',
+    `Fee:   ${feeLabel}`,
+  ].filter(Boolean).join('\n');
+
+  const text = [
+    `${greet},`,
+    ``,
+    `Your spot has been moved back to the waiting list. We'll let you know if a spot opens up again.`,
+    ``,
+    detailLines,
+    ``,
+    `Event page: ${eventUrl}`,
+    ``,
+    `— ${CLUB_SIGNATURE}`,
+  ].filter(Boolean).join('\n');
+
+  const detailRows = `
+    <tr><td style="padding:6px 12px;color:#6B6B6B;">When</td><td style="padding:6px 12px;">${escapeHtml(startsLabel)}</td></tr>
+    ${event.location ? `<tr><td style="padding:6px 12px;color:#6B6B6B;">Where</td><td style="padding:6px 12px;">${escapeHtml(event.location)}</td></tr>` : ''}
+    <tr><td style="padding:6px 12px;color:#6B6B6B;">Fee</td><td style="padding:6px 12px;">${escapeHtml(feeLabel)}</td></tr>
+  `;
+
+  const html = `<!doctype html><html><body style="font-family:-apple-system,system-ui,sans-serif;background:#FAF7F0;padding:24px;color:#0F1A14;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #E5E2D8;border-radius:16px;padding:28px;">
+    <h1 style="margin:0 0 16px 0;font-size:22px;color:#7C5800;">Moved to the waiting list — ${escapeHtml(event.title)}</h1>
+    <p style="margin:0 0 12px 0;">${escapeHtml(greet)},</p>
+    <p style="margin:0 0 18px 0;">Your spot has been moved back to the waiting list. We'll let you know if a spot opens up again.</p>
+    <table style="border-collapse:collapse;width:100%;font-size:14px;margin-bottom:18px;background:#FAF7F0;border-radius:10px;overflow:hidden;">${detailRows}</table>
+    <p style="margin:0 0 18px 0;">
+      <a href="${escapeHtml(eventUrl)}" style="display:inline-block;background:#00A859;color:#fff;text-decoration:none;padding:10px 18px;border-radius:999px;font-weight:600;">View event page →</a>
     </p>
     <p style="margin:0;color:#6B6B6B;font-size:13px;">— ${escapeHtml(CLUB_SIGNATURE)}</p>
   </div>
