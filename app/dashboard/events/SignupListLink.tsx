@@ -3,6 +3,17 @@
 import { useEffect, useState } from 'react';
 import type { SignupStatus } from '@/lib/signups';
 
+// Roster grouping order: confirmed players first, then anyone waiting for a
+// decision, then drop-outs at the bottom so the active list reads cleanly.
+// Within each group the original signed-up-at order is preserved (stable sort).
+const STATUS_ORDER: Record<SignupStatus, number> = {
+  accepted:     0,
+  waiting_list: 1,
+  waitlisted:   2,
+  declined:     3,
+  cancelled:    4,
+};
+
 const STATUS_BADGE: Record<SignupStatus, { bg: string; fg: string; label: string }> = {
   accepted:     { bg: '#D1FAE5', fg: 'var(--color-accent-dk)', label: 'Accepted'     },
   waiting_list: { bg: '#EDE9FE', fg: '#6D28D9',                label: 'Waiting list' },
@@ -68,7 +79,7 @@ export default function SignupListLink({
             ) : (
               <ol className="text-sm space-y-1.5 max-h-80 overflow-auto" style={{ paddingLeft: '1.25rem' }}>
                 {[...entries]
-                  .sort((a, b) => Number(a.status === 'cancelled') - Number(b.status === 'cancelled'))
+                  .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status])
                   .map((e, i) => {
                   const tone = STATUS_BADGE[e.status];
                   const dropped = e.status === 'cancelled';
