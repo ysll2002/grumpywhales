@@ -12,10 +12,10 @@ function teamColourSwatch(key: string | null): { swatch: string; fg: string } | 
   return c ? { swatch: c.swatch, fg: c.fg } : null;
 }
 function statusLabel(s: string): string {
-  if (s === 'accepted')   return 'Accepted';
-  if (s === 'waitlisted') return 'Waitlist';
-  if (s === 'declined')   return 'Not selected';
-  if (s === 'pending')    return 'Pending';
+  if (s === 'accepted')     return 'Accepted';
+  if (s === 'waitlisted')   return 'Waitlist';
+  if (s === 'declined')     return 'Not selected';
+  if (s === 'waiting_list') return 'Waiting list';
   return s;
 }
 
@@ -27,13 +27,13 @@ function statusLabel(s: string): string {
 export type RosterEntry = {
   name:         string | null;
   signed_up_at: string;
-  status:       'accepted' | 'waitlisted' | 'declined' | 'pending';
+  status:       'accepted' | 'waitlisted' | 'declined' | 'waiting_list';
   team_colour:  string | null;
 };
 
 type PublishOpts = {
   attendeeName: string | null;
-  status:       'accepted' | 'waitlisted' | 'declined' | 'pending';
+  status:       'accepted' | 'waitlisted' | 'declined' | 'waiting_list';
   event: {
     title:             string;
     starts_at:         string;

@@ -34,7 +34,7 @@ export default async function UnpaidPage() {
   const session = await auth();
   const profileId = session!.user.profileId;
 
-  // Only accepted-and-unpaid surfaces as "due". Pending rows carry
+  // Only accepted-and-unpaid surfaces as "due". Waiting-list rows carry
   // payment_status='unpaid' in the DB but render as N/A in the UI —
   // they shouldn't show here or contribute to the outstanding total.
   const { data } = await supabase

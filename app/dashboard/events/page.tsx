@@ -78,11 +78,11 @@ import { SIGNUP_STATUS_LABELS, PAYMENT_STATUS_LABELS, type SignupStatus, type Pa
 const DISCOVERY_OCCURRENCES_PER_EVENT = 8;
 
 const STATUS_BADGE: Record<SignupStatus, { bg: string; fg: string }> = {
-  accepted:   { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
-  pending:    { bg: '#EDE9FE', fg: '#6D28D9' },
-  waitlisted: { bg: '#FFF4B8', fg: '#7C5800' },
-  declined:   { bg: '#FEE2E2', fg: 'var(--color-red)' },
-  cancelled:  { bg: '#E5E7EB', fg: '#6B7280' },
+  accepted:     { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
+  waiting_list: { bg: '#EDE9FE', fg: '#6D28D9' },
+  waitlisted:   { bg: '#FFF4B8', fg: '#7C5800' },
+  declined:     { bg: '#FEE2E2', fg: 'var(--color-red)' },
+  cancelled:    { bg: '#E5E7EB', fg: '#6B7280' },
 };
 
 const PAYMENT_BADGE: Record<PaymentStatus, { bg: string; fg: string }> = {
@@ -339,9 +339,9 @@ function AttendingCard({
           <Badge tone={{ bg: '#FEE2E2', fg: 'var(--color-red)' }}>Cancelled by host</Badge>
         ) : signup ? (() => {
           // Payment is only relevant once the attendee is on the final list.
-          // Pending = no payment due → no badge, no Pay button. We no longer
-          // gate on the host publishing the date — once you're accepted you
-          // can pay any time, matching the Unpaid page behaviour.
+          // Waiting list = no payment due → no badge, no Pay button. We no
+          // longer gate on the host publishing the date — once you're accepted
+          // you can pay any time, matching the Unpaid page behaviour.
           const isAccepted = signup.status === 'accepted';
           const showPayBadge = isAccepted && Number(event.fee_amount) > 0;
           const showPayButton =

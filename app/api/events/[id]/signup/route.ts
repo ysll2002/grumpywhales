@@ -85,7 +85,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   // Capacity is an indicative target, not a hard cap — first-come signups
   // are always accepted; curated ones still wait for the host to publish.
-  const status: SignupStatus = event.signup_mode === 'curated' ? 'pending' : 'accepted';
+  const status: SignupStatus = event.signup_mode === 'curated' ? 'waiting_list' : 'accepted';
 
   const payment_status: PaymentStatus = Number(event.fee_amount) > 0 ? 'unpaid' : 'free';
 

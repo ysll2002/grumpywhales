@@ -7,7 +7,7 @@ import { TEAM_COLOUR_KEYS, type TeamColour } from '@/lib/signups';
 import { sendEmail } from '@/lib/email';
 import { attendeeAcceptedEmail } from '@/lib/email-templates';
 
-const VALID_STATUS:  SignupStatus[]  = ['accepted', 'pending', 'waitlisted', 'declined', 'cancelled'];
+const VALID_STATUS:  SignupStatus[]  = ['accepted', 'waiting_list', 'waitlisted', 'declined', 'cancelled'];
 const VALID_PAYMENT: PaymentStatus[] = ['free', 'unpaid', 'paid'];
 
 // PATCH /api/events/:id/signups/:signupId — admin tweaks a signup row.
@@ -52,7 +52,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'nothing_to_update' }, { status: 400 });
   }
 
-  // Snapshot the previous status so we can detect the pending → accepted
+  // Snapshot the previous status so we can detect the waiting_list → accepted
   // transition after the update and fire the acceptance email exactly once
   // (bulk edits hit this endpoint per-row, so per-transition is correct).
   const { data: prev } = await supabase

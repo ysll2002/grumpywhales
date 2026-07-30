@@ -37,13 +37,13 @@ type Props = {
   initial:          AttendeeRow[];
 };
 
-// Only two visible statuses now — pending (default) and accepted (on the
+// Only two visible statuses now — waiting_list (default) and accepted (on the
 // final list). 'cancelled' still exists as an internal soft-delete state
 // (set by self-cancel or the Remove button) but the row is filtered out of
 // the table query so it never needs to render here.
 const STATUS_OPTIONS: { value: SignupStatus; label: string }[] = [
-  { value: 'pending',  label: 'Pending'  },
-  { value: 'accepted', label: 'Accepted' },
+  { value: 'waiting_list', label: 'Waiting list' },
+  { value: 'accepted',     label: 'Accepted'     },
 ];
 
 const PAYMENT_OPTIONS: { value: PaymentStatus; label: string }[] = [
@@ -53,22 +53,22 @@ const PAYMENT_OPTIONS: { value: PaymentStatus; label: string }[] = [
 ];
 
 const STATUS_TONE: Record<SignupStatus, { bg: string; fg: string }> = {
-  accepted:   { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
-  pending:    { bg: '#FFF4B8', fg: '#7C5800' },
-  waitlisted: { bg: '#FFF4B8', fg: '#7C5800' },
-  declined:   { bg: '#FEE2E2', fg: 'var(--color-red)' },
-  cancelled:  { bg: '#E5E7EB', fg: '#6B7280' },
+  accepted:     { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
+  waiting_list: { bg: '#FFF4B8', fg: '#7C5800' },
+  waitlisted:   { bg: '#FFF4B8', fg: '#7C5800' },
+  declined:     { bg: '#FEE2E2', fg: 'var(--color-red)' },
+  cancelled:    { bg: '#E5E7EB', fg: '#6B7280' },
 };
 
 // Cancelled signups are self-drops or admin removals — the row is kept for
 // audit and shown at the bottom under a 'DROP OUT' label so the roster
 // history is visible without inflating the active counts.
 const STATUS_DISPLAY: Record<SignupStatus, string> = {
-  accepted:   'accepted',
-  pending:    'pending',
-  waitlisted: 'waitlisted',
-  declined:   'declined',
-  cancelled:  'drop out',
+  accepted:     'accepted',
+  waiting_list: 'waiting list',
+  waitlisted:   'waitlisted',
+  declined:     'declined',
+  cancelled:    'drop out',
 };
 
 const PAY_TONE: Record<PaymentStatus, { bg: string; fg: string }> = {
@@ -245,13 +245,13 @@ export default function AttendeesTable({
   const activeRows    = useMemo(() => rows.filter(r => r.status !== 'cancelled'), [rows]);
   const dropoutCount  = useMemo(() => rows.filter(r => r.status === 'cancelled').length, [rows]);
   const acceptedCount = useMemo(() => rows.filter(r => r.status === 'accepted').length, [rows]);
-  const pendingCount  = useMemo(() => rows.filter(r => r.status === 'pending').length, [rows]);
+  const waitingListCount = useMemo(() => rows.filter(r => r.status === 'waiting_list').length, [rows]);
   async function publish() {
     const breakdown = [
       `${acceptedCount} accepted`,
       `${rows.filter(r => r.status === 'waitlisted').length} waitlisted`,
       `${rows.filter(r => r.status === 'declined').length} declined`,
-      pendingCount ? `${pendingCount} still pending (will also be emailed)` : '',
+      waitingListCount ? `${waitingListCount} still on the waiting list (will also be emailed)` : '',
     ].filter(Boolean).join(', ');
     const ok = await confirm({
       title:        'Send acceptances?',
@@ -387,7 +387,7 @@ export default function AttendeesTable({
         <div className="flex gap-6 text-sm">
           <Stat label="Signed up">{activeRows.length}</Stat>
           <Stat label="Accepted">{acceptedCount}{capacity != null ? ` / ${capacity}` : ''}</Stat>
-          <Stat label="Pending">{pendingCount}</Stat>
+          <Stat label="Waiting list">{waitingListCount}</Stat>
           {dropoutCount > 0 && <Stat label="Drop out">{dropoutCount}</Stat>}
         </div>
         <div className="flex flex-col items-end gap-2">
@@ -488,8 +488,8 @@ export default function AttendeesTable({
 
           <div className="flex items-center gap-2 flex-wrap basis-full justify-end">
             <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--color-muted)' }}>Operation</span>
-            <BulkBtn label="Mark accepted" onClick={() => bulkPatch({ status: 'accepted' })} disabled={selected.size === 0 || bulkBusy} />
-            <BulkBtn label="Mark pending"  onClick={() => bulkPatch({ status: 'pending'  })} disabled={selected.size === 0 || bulkBusy} />
+            <BulkBtn label="Mark accepted"     onClick={() => bulkPatch({ status: 'accepted'     })} disabled={selected.size === 0 || bulkBusy} />
+            <BulkBtn label="Mark waiting list" onClick={() => bulkPatch({ status: 'waiting_list' })} disabled={selected.size === 0 || bulkBusy} />
             <BulkBtn label="Mark paid"     onClick={() => bulkPatch({ payment_status: 'paid'   })} disabled={selected.size === 0 || bulkBusy} />
             <BulkBtn label="Mark unpaid"   onClick={() => bulkPatch({ payment_status: 'unpaid' })} disabled={selected.size === 0 || bulkBusy} />
           </div>
@@ -603,7 +603,7 @@ export default function AttendeesTable({
                   )}
                 </Td>
                 <Td>
-                  {droppedOut || r.status === 'pending' ? (
+                  {droppedOut || r.status === 'waiting_list' ? (
                     <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold"
                       style={{ backgroundColor: '#E5E7EB', color: '#6B7280' }}>
                       N/A

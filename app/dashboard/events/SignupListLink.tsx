@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react';
 import type { SignupStatus } from '@/lib/signups';
 
 const STATUS_BADGE: Record<SignupStatus, { bg: string; fg: string; label: string }> = {
-  accepted:   { bg: '#D1FAE5', fg: 'var(--color-accent-dk)', label: 'Accepted' },
-  pending:    { bg: '#EDE9FE', fg: '#6D28D9',                label: 'Pending' },
-  waitlisted: { bg: '#FFF4B8', fg: '#7C5800',                label: 'Waitlist' },
-  declined:   { bg: '#FEE2E2', fg: 'var(--color-red)',       label: 'Declined' },
-  cancelled:  { bg: '#E5E7EB', fg: '#6B7280',                label: 'Cancelled' },
+  accepted:     { bg: '#D1FAE5', fg: 'var(--color-accent-dk)', label: 'Accepted' },
+  waiting_list: { bg: '#EDE9FE', fg: '#6D28D9',                label: 'Waiting list' },
+  waitlisted:   { bg: '#FFF4B8', fg: '#7C5800',                label: 'Waitlist' },
+  declined:     { bg: '#FEE2E2', fg: 'var(--color-red)',       label: 'Declined' },
+  cancelled:    { bg: '#E5E7EB', fg: '#6B7280',                label: 'Cancelled' },
 };
 
 export type SignupEntry = { name: string; status: SignupStatus };
