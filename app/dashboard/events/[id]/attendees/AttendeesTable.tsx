@@ -575,7 +575,7 @@ export default function AttendeesTable({
                 <Td>
                   <div className="font-medium">{r.name ?? '—'}</div>
                   {r.admin_notes && (
-                    <div className="text-xs whitespace-pre-wrap" style={{ color: 'var(--color-muted)' }}>{r.admin_notes}</div>
+                    <div className="text-xs whitespace-pre-wrap" style={{ color: '#2563EB' }}>{r.admin_notes}</div>
                   )}
                 </Td>
                 <Td muted>
