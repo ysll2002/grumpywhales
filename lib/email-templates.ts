@@ -13,7 +13,6 @@ function teamColourSwatch(key: string | null): { swatch: string; fg: string } | 
 }
 function statusLabel(s: string): string {
   if (s === 'accepted')     return 'Accepted';
-  if (s === 'waitlisted')   return 'Waitlist';
   if (s === 'declined')     return 'Not selected';
   if (s === 'waiting_list') return 'Waiting list';
   return s;
@@ -27,13 +26,13 @@ function statusLabel(s: string): string {
 export type RosterEntry = {
   name:         string | null;
   signed_up_at: string;
-  status:       'accepted' | 'waitlisted' | 'declined' | 'waiting_list';
+  status:       'accepted' | 'declined' | 'waiting_list';
   team_colour:  string | null;
 };
 
 type PublishOpts = {
   attendeeName: string | null;
-  status:       'accepted' | 'waitlisted' | 'declined' | 'waiting_list';
+  status:       'accepted' | 'declined' | 'waiting_list';
   event: {
     title:             string;
     starts_at:         string;
@@ -57,15 +56,12 @@ export function attendeeListPublishEmail(opts: PublishOpts) {
   const feeLabel = event.fee_amount > 0 ? formatMoney(event.fee_amount, event.fee_currency) : 'Free';
 
   const headline =
-    status === 'accepted'   ? `You're in for ${event.title}` :
-    status === 'waitlisted' ? `You're on the waitlist for ${event.title}` :
-                              `Update on ${event.title}`;
+    status === 'accepted' ? `You're in for ${event.title}`
+                          : `Update on ${event.title}`;
 
   const intro =
     status === 'accepted'
       ? "You're confirmed. Here are the details:"
-      : status === 'waitlisted'
-      ? "You're on the waitlist. We'll let you know if a spot opens up. Details below in case it does:"
       : "Thanks for signing up. Unfortunately you didn't make the final list this time.";
 
   const detailRows = status === 'declined' ? '' : `

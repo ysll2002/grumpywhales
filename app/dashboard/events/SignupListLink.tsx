@@ -9,15 +9,13 @@ import type { SignupStatus } from '@/lib/signups';
 const STATUS_ORDER: Record<SignupStatus, number> = {
   accepted:     0,
   waiting_list: 1,
-  waitlisted:   2,
-  declined:     3,
-  cancelled:    4,
+  declined:     2,
+  cancelled:    3,
 };
 
 const STATUS_BADGE: Record<SignupStatus, { bg: string; fg: string; label: string }> = {
   accepted:     { bg: '#D1FAE5', fg: 'var(--color-accent-dk)', label: 'Accepted'     },
   waiting_list: { bg: '#EDE9FE', fg: '#6D28D9',                label: 'Waiting list' },
-  waitlisted:   { bg: '#FFF4B8', fg: '#7C5800',                label: 'Waitlist'     },
   declined:     { bg: '#FEE2E2', fg: 'var(--color-red)',       label: 'Declined'     },
   cancelled:    { bg: '#E5E7EB', fg: '#6B7280',                label: 'Drop out'     },
 };

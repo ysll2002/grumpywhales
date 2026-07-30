@@ -1,7 +1,6 @@
 export type SignupStatus =
   | 'accepted'      // confirmed on the attendee list
   | 'waiting_list'  // curated mode — waiting for admin
-  | 'waitlisted'    // first_come past capacity (populated in P3)
   | 'declined'      // curated, admin rejected
   | 'cancelled';    // attendee withdrew or admin removed
 
@@ -23,7 +22,6 @@ export type EventSignup = {
 export const SIGNUP_STATUS_LABELS: Record<SignupStatus, string> = {
   accepted:     "You're in",
   waiting_list: 'Awaiting admin to publish final list',
-  waitlisted:   'Waitlist',
   declined:     'Not selected',
   cancelled:    'Cancelled',
 };

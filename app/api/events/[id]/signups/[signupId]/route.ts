@@ -7,7 +7,7 @@ import { TEAM_COLOUR_KEYS, type TeamColour } from '@/lib/signups';
 import { sendEmail } from '@/lib/email';
 import { attendeeAcceptedEmail } from '@/lib/email-templates';
 
-const VALID_STATUS:  SignupStatus[]  = ['accepted', 'waiting_list', 'waitlisted', 'declined', 'cancelled'];
+const VALID_STATUS:  SignupStatus[]  = ['accepted', 'waiting_list', 'declined', 'cancelled'];
 const VALID_PAYMENT: PaymentStatus[] = ['free', 'unpaid', 'paid'];
 
 // PATCH /api/events/:id/signups/:signupId — admin tweaks a signup row.

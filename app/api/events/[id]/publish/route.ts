@@ -6,7 +6,7 @@ import { sendEmail } from '@/lib/email';
 import { attendeeListPublishEmail, type RosterEntry } from '@/lib/email-templates';
 
 type SignupForEmail = {
-  status:       'accepted' | 'waitlisted' | 'declined' | 'waiting_list';
+  status:       'accepted' | 'declined' | 'waiting_list';
   signed_up_at: string;
   team_colour:  string | null;
   profiles:     { name: string | null; email: string } | null;

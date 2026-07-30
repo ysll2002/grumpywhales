@@ -80,7 +80,6 @@ const DISCOVERY_OCCURRENCES_PER_EVENT = 8;
 const STATUS_BADGE: Record<SignupStatus, { bg: string; fg: string }> = {
   accepted:     { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
   waiting_list: { bg: '#EDE9FE', fg: '#6D28D9' },
-  waitlisted:   { bg: '#FFF4B8', fg: '#7C5800' },
   declined:     { bg: '#FEE2E2', fg: 'var(--color-red)' },
   cancelled:    { bg: '#E5E7EB', fg: '#6B7280' },
 };

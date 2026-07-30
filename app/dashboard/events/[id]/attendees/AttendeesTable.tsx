@@ -56,7 +56,6 @@ const PAYMENT_OPTIONS: { value: PaymentStatus; label: string }[] = [
 const STATUS_TONE: Record<SignupStatus, { bg: string; fg: string }> = {
   accepted:     { bg: '#D1FAE5', fg: 'var(--color-accent-dk)' },
   waiting_list: { bg: '#FFF4B8', fg: '#7C5800' },
-  waitlisted:   { bg: '#FFF4B8', fg: '#7C5800' },
   declined:     { bg: '#FEE2E2', fg: 'var(--color-red)' },
   cancelled:    { bg: '#E5E7EB', fg: '#6B7280' },
 };
@@ -67,7 +66,6 @@ const STATUS_TONE: Record<SignupStatus, { bg: string; fg: string }> = {
 const STATUS_DISPLAY: Record<SignupStatus, string> = {
   accepted:     'accepted',
   waiting_list: 'waiting list',
-  waitlisted:   'waitlisted',
   declined:     'declined',
   cancelled:    'drop out',
 };
@@ -250,7 +248,6 @@ export default function AttendeesTable({
   async function publish() {
     const breakdown = [
       `${acceptedCount} accepted`,
-      `${rows.filter(r => r.status === 'waitlisted').length} waitlisted`,
       `${rows.filter(r => r.status === 'declined').length} declined`,
       waitingListCount ? `${waitingListCount} still on the waiting list (will also be emailed)` : '',
     ].filter(Boolean).join(', ');
