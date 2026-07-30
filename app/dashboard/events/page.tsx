@@ -180,11 +180,14 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
   const involvedEventIds = Array.from(new Set(allAttending.map(r => r.event.id)));
   const signupEntriesByKey = new Map<string, SignupEntry[]>();
   if (involvedEventIds.length > 0) {
+    // Include cancelled ("drop out") rows so the Signed-Up modal can show
+    // them at the bottom for context. The `signedUp` count downstream still
+    // only counts non-cancelled entries so the "N / cap signed up" number
+    // reflects the active roster only.
     const { data: signupRows } = await supabase
       .from('event_signups')
       .select('event_id, occurrence_date, signed_up_at, status, profiles(name)')
       .in('event_id', involvedEventIds)
-      .neq('status', 'cancelled')
       .order('signed_up_at', { ascending: true });
     type Row = { event_id: string; occurrence_date: string; status: SignupStatus; profiles: { name: string | null } | null };
     for (const r of (signupRows ?? []) as unknown as Row[]) {
@@ -202,7 +205,7 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
     const occDate = r.iso.slice(0, 10);
     return {
       ...r,
-      signedUp:      entries.length,
+      signedUp:      entries.filter(e => e.status !== 'cancelled').length,
       signedUpEntries: entries,
       opensAtIso:    openInfo.open ? null : openInfo.opensAt.toISOString(),
       videoUrl:      r.event.video_links?.[occDate] ?? null,

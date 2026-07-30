@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react';
 import type { SignupStatus } from '@/lib/signups';
 
 const STATUS_BADGE: Record<SignupStatus, { bg: string; fg: string; label: string }> = {
-  accepted:     { bg: '#D1FAE5', fg: 'var(--color-accent-dk)', label: 'Accepted' },
+  accepted:     { bg: '#D1FAE5', fg: 'var(--color-accent-dk)', label: 'Accepted'     },
   waiting_list: { bg: '#EDE9FE', fg: '#6D28D9',                label: 'Waiting list' },
-  waitlisted:   { bg: '#FFF4B8', fg: '#7C5800',                label: 'Waitlist' },
-  declined:     { bg: '#FEE2E2', fg: 'var(--color-red)',       label: 'Declined' },
-  cancelled:    { bg: '#E5E7EB', fg: '#6B7280',                label: 'Cancelled' },
+  waitlisted:   { bg: '#FFF4B8', fg: '#7C5800',                label: 'Waitlist'     },
+  declined:     { bg: '#FEE2E2', fg: 'var(--color-red)',       label: 'Declined'     },
+  cancelled:    { bg: '#E5E7EB', fg: '#6B7280',                label: 'Drop out'     },
 };
 
 export type SignupEntry = { name: string; status: SignupStatus };
@@ -67,11 +67,14 @@ export default function SignupListLink({
               <p className="text-sm" style={{ color: 'var(--color-muted)' }}>No-one signed up yet.</p>
             ) : (
               <ol className="text-sm space-y-1.5 max-h-80 overflow-auto" style={{ paddingLeft: '1.25rem' }}>
-                {entries.map((e, i) => {
+                {[...entries]
+                  .sort((a, b) => Number(a.status === 'cancelled') - Number(b.status === 'cancelled'))
+                  .map((e, i) => {
                   const tone = STATUS_BADGE[e.status];
+                  const dropped = e.status === 'cancelled';
                   return (
-                    <li key={i} className="flex items-center justify-between gap-3 pr-2">
-                      <span className="truncate">{e.name}</span>
+                    <li key={i} className="flex items-center justify-between gap-3 pr-2" style={{ opacity: dropped ? 0.55 : 1 }}>
+                      <span className="truncate" style={{ textDecoration: dropped ? 'line-through' : undefined }}>{e.name}</span>
                       <span
                         className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold flex-shrink-0"
                         style={{ backgroundColor: tone.bg, color: tone.fg }}
