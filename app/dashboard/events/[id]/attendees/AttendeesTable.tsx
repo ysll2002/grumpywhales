@@ -12,6 +12,7 @@ export type AttendeeRow = {
   profile_id:        string;
   name:              string | null;
   email:             string | null;
+  admin_notes:       string | null;
   status:            SignupStatus;
   payment_status:    PaymentStatus;
   team_colour:       TeamColour | null;
@@ -573,7 +574,9 @@ export default function AttendeesTable({
                 )}
                 <Td>
                   <div className="font-medium">{r.name ?? '—'}</div>
-                  <div className="text-xs" style={{ color: 'var(--color-muted)' }}>{r.email}</div>
+                  {r.admin_notes && (
+                    <div className="text-xs whitespace-pre-wrap" style={{ color: 'var(--color-muted)' }}>{r.admin_notes}</div>
+                  )}
                 </Td>
                 <Td muted>
                   <div>{new Date(r.signed_up_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
